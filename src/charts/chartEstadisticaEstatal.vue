@@ -25,7 +25,7 @@ onMounted(() => {
 
 watch(list_Municipios, (val) => {
   series.value = [];
-  if (val != null) {
+  if (val.length > 0) {
     rellenarGrafica();
   }
 });
@@ -92,6 +92,10 @@ const options = {
   fill: {
     opacity: 1,
   },
+  legend: {
+    position: "top",
+    horizontalAlign: "center",
+  },
   tooltip: {
     y: {
       formatter: function (val) {
@@ -101,5 +105,3 @@ const options = {
   },
 };
 </script>
-
-<style></style>
