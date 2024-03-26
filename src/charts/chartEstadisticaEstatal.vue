@@ -1,0 +1,105 @@
+<template>
+  <div class="flex-center">
+    <apexchart
+      height="500px"
+      type="bar"
+      :options="options"
+      :series="series"
+    ></apexchart>
+  </div>
+</template>
+
+<script setup>
+import { useConfiguracionStore } from "src/stores/configuracion-store";
+import { storeToRefs } from "pinia";
+import { onMounted, watch, ref } from "vue";
+
+const configuracionStore = useConfiguracionStore();
+const { list_Municipios } = storeToRefs(configuracionStore);
+const category = ref([]);
+const series = ref([]);
+
+onMounted(() => {
+  rellenarGrafica();
+});
+
+watch(list_Municipios, (val) => {
+  series.value = [];
+  if (val != null) {
+    rellenarGrafica();
+  }
+});
+
+const rellenarGrafica = () => {
+  if (list_Municipios.value.length > 0) {
+    list_Municipios.value.forEach((x) => category.value.push(x.label));
+  }
+  series.value.push(
+    {
+      name: "DIP MR",
+      data: [44, 55],
+    },
+    {
+      name: "DIP RP",
+      data: [],
+    },
+    {
+      name: "PYS",
+      data: [35],
+    },
+    {
+      name: "REG MR",
+      data: [],
+    },
+    {
+      name: "REG RP",
+      data: [35, 41],
+    }
+  );
+};
+
+const options = {
+  title: {
+    text: "Estadístico estatal",
+    align: "left",
+    style: {
+      fontSize: "20px",
+      color: "#838888",
+    },
+  },
+  chart: {
+    type: "bar",
+    height: 350,
+  },
+  plotOptions: {
+    bar: {
+      horizontal: false,
+      columnWidth: "55%",
+      endingShape: "rounded",
+    },
+  },
+  dataLabels: {
+    enabled: false,
+  },
+  stroke: {
+    show: true,
+    width: 2,
+    colors: ["transparent"],
+  },
+  xaxis: {
+    categories: category.value,
+  },
+  fill: {
+    opacity: 1,
+  },
+  tooltip: {
+    y: {
+      formatter: function (val) {
+        return val;
+      },
+    },
+  },
+};
+</script>
+
+<style></style>

@@ -10,23 +10,16 @@
           aria-label="Menu"
           @click="toggleLeftDrawer"
         />
-
-        <q-toolbar-title> Computos </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
+        <q-toolbar-title> Cómputos </q-toolbar-title>
       </q-toolbar>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <div class="text-center q-pa-md">
-          <q-img src="../assets/Conoceles2@300x.png" />
-        </div>
-        <div class="text-weight-bold text-black q-pa-md">
+        <!-- <div class="text-weight-bold text-black q-pa-md">
           <br />
           Bienvenido(a) {{ userName }}
-        </div>
-
+        </div> -->
         <q-item
           clickable
           v-ripple
@@ -51,17 +44,98 @@
           </q-item-section>
           <q-item-section> Captura </q-item-section>
         </q-item>
+        <q-item
+          clickable
+          v-ripple
+          class="text-grey-8"
+          :to="{ name: 'reservas' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="content_copy" />
+          </q-item-section>
+          <q-item-section> Reservas </q-item-section>
+        </q-item>
+        <q-item
+          clickable
+          v-ripple
+          class="text-grey-8"
+          :to="{ name: 'consulta' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="search" />
+          </q-item-section>
+          <q-item-section> Consulta </q-item-section>
+        </q-item>
+        <q-item
+          clickable
+          v-ripple
+          class="text-grey-8"
+          :to="{ name: 'porCasilla' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="archive" />
+          </q-item-section>
+          <q-item-section> Por casilla </q-item-section>
+        </q-item>
+        <q-item
+          clickable
+          v-ripple
+          class="text-grey-8"
+          :to="{ name: 'mayoria' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="bar_chart" />
+          </q-item-section>
+          <q-item-section> Mayoria </q-item-section>
+        </q-item>
+        <q-item
+          clickable
+          v-ripple
+          class="text-grey-8"
+          :to="{ name: 'solicitudes' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="clear_all" />
+          </q-item-section>
+          <q-item-section> Solicitudes </q-item-section>
+        </q-item>
+        <q-item
+          clickable
+          v-ripple
+          class="text-grey-8"
+          :to="{ name: 'panel' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="analytics" />
+          </q-item-section>
+          <q-item-section> Panel </q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <q-footer elevated class="bg-pink-ieen text-white">
+      <q-toolbar>
+        <q-toolbar-title>
+          <div>&#169; Unidad Técnica de Informatica y Estadística</div>
+        </q-toolbar-title>
+      </q-toolbar>
+    </q-footer>
   </q-layout>
 </template>
 
 <script setup>
 import { ref } from "vue";
+
 const leftDrawerOpen = ref(false);
 
 function toggleLeftDrawer() {

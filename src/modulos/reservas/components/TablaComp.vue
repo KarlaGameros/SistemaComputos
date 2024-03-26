@@ -11,8 +11,8 @@
         @click="eleccion = tipo.siglas"
         :flat="tipo.siglas != eleccion"
         rounded
-        color="blue-grey"
         icon="layers"
+        color="blue-grey"
         :label="tipo.nombre"
       />
     </q-banner>
@@ -37,32 +37,20 @@
         <q-tab-panels v-model="tab" animated>
           <q-tab-panel name="MR">
             <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a recuento
+              Listado de casillas reservadas
             </div>
             <br />
-            <div><TablaComputadaRecuento :tipo="'recuentoMR'" /></div>
+            <div><TablaReservasComp :tipo="'reservasMR'" /></div>
             <br />
-            <q-separator /><br />
-            <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a cotejo
-            </div>
-            <br />
-            <div><TablaComputadaRecuento :tipo="'cotejoMR'" /></div>
           </q-tab-panel>
 
           <q-tab-panel name="RP">
             <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a recuento
+              Listado de casillas reservadas
             </div>
             <br />
-            <div><TablaComputadaRecuento :tipo="'recuentoRP'" /></div>
+            <div><TablaReservasComp :tipo="'reservasRP'" /></div>
             <br />
-            <q-separator /><br />
-            <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a cotejo
-            </div>
-            <br />
-            <div><TablaComputadaRecuento :tipo="'cotejoRP'" /></div>
           </q-tab-panel>
         </q-tab-panels>
       </q-card>
@@ -72,10 +60,9 @@
 
 <script setup>
 import { onBeforeMount, ref } from "vue";
-import TablaComputadaRecuento from "./TablaComputadaRecuento.vue";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
-
+import TablaReservasComp from "../components/TablaReservasComp.vue";
 //-----------------------------------------------------------
 
 const configuracionStore = useConfiguracionStore();
