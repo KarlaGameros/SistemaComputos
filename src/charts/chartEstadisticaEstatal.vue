@@ -31,7 +31,7 @@ watch(list_Municipios, (val) => {
 });
 
 const rellenarGrafica = () => {
-  if (list_Municipios.value.length > 0) {
+  if (category.value.length == 0) {
     list_Municipios.value.forEach((x) => category.value.push(x.label));
   }
   series.value.push(

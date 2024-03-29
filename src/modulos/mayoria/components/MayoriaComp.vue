@@ -23,8 +23,8 @@
             <q-select
               dense
               outlined
-              v-model="model"
-              :options="options"
+              v-model="municipio_Id"
+              :options="list_Municipios"
               label="Outlined"
             />
           </div>
@@ -47,8 +47,10 @@ import chartMayoria from "src/charts/chartMayoria.vue";
 //-----------------------------------------------------------
 
 const configuracionStore = useConfiguracionStore();
-const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
+const { list_Tipo_Elecciones, list_Municipios } =
+  storeToRefs(configuracionStore);
 const eleccion = ref("DIP");
+const municipio_Id = ref(null);
 
 //-----------------------------------------------------------
 
@@ -59,6 +61,7 @@ onBeforeMount(() => {
 //-----------------------------------------------------------
 
 const cargarData = async () => {
+  await configuracionStore.loadMunicipios();
   await configuracionStore.loadTipoElecciones();
   await configuracionStore.loadPartidosPoliticos();
   await configuracionStore.loadCoaliciones();

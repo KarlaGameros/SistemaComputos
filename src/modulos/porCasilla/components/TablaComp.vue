@@ -250,4 +250,11 @@ const rows = ref([
     total_capturadas: 30,
   },
 ]);
+const filter = ref("");
+const pagination = ref({
+  sortBy: "desc",
+  descending: false,
+  page: 1,
+  rowsPerPage: 5,
+});
 </script>

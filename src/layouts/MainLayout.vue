@@ -147,4 +147,7 @@ function toggleLeftDrawer() {
   color: white;
   background: #d1308a !important;
 }
+.text-pink-ieen-1 {
+  color: #d1308a !important;
+}
 </style>

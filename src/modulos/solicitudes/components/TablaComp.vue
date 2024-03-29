@@ -56,6 +56,9 @@
 </template>
 
 <script setup>
+import { ref } from "vue";
+
+const rows = ref([]);
 const columns = [
   {
     name: "tipo_eleccion",
@@ -107,6 +110,11 @@ const columns = [
     sortable: true,
   },
 ];
+const filter = ref("");
+const pagination = ref({
+  sortBy: "desc",
+  descending: false,
+  page: 1,
+  rowsPerPage: 5,
+});
 </script>
-
-<style></style>
