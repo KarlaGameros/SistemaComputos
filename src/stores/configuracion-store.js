@@ -25,13 +25,6 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
             nombre: tipo.nombre,
             siglas: tipo.siglas,
             activo: tipo.activo,
-            propietario_1: tipo.propietario_1,
-            propietario_2: tipo.propietario_2,
-            suplente_1: tipo.suplente_1,
-            suplente_2: tipo.suplente_2,
-            fecha_Registro: tipo.fecha_Registro,
-            value: tipo.id,
-            label: tipo.nombre,
           };
         });
         this.list_Tipo_Elecciones = listTipoElecciones;

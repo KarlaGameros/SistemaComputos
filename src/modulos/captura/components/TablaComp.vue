@@ -1,87 +1,128 @@
 <template>
-  <div class="q-pa-lg">
-    <q-banner
-      inline-actions
-      class="text-justify bg-white"
-      style="border-radius: 20px"
-    >
-      <q-btn
-        v-for="tipo in list_Tipo_Elecciones"
-        :key="tipo"
-        @click="eleccion = tipo.siglas"
-        :flat="tipo.siglas != eleccion"
-        rounded
-        color="blue-grey"
-        icon="layers"
-        :label="tipo.nombre"
-      />
-    </q-banner>
-    <div class="q-pt-md">
-      <q-card>
-        <q-tabs
-          v-model="tab"
-          class="text-grey"
-          active-color="blue-grey"
-          indicator-color="blue-grey"
-          align="justify"
-          :breakpoint="0"
-        >
-          <q-tab name="MR" label="Mayoria relativa" />
-          <q-tab
-            v-if="eleccion == 'DIP' || eleccion == 'REG'"
-            name="RP"
-            label="Representación proporcional"
-          />
-        </q-tabs>
-        <q-separator />
-        <q-tab-panels v-model="tab" animated>
-          <q-tab-panel name="MR">
-            <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a recuento
-            </div>
-            <br />
-            <div><TablaComputadaRecuento :tipo="'recuentoMR'" /></div>
-            <br />
-            <q-separator /><br />
-            <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a cotejo
-            </div>
-            <br />
-            <div><TablaComputadaRecuento :tipo="'cotejoMR'" /></div>
-          </q-tab-panel>
-
-          <q-tab-panel name="RP">
-            <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a recuento
-            </div>
-            <br />
-            <div><TablaComputadaRecuento :tipo="'recuentoRP'" /></div>
-            <br />
-            <q-separator /><br />
-            <div class="text-h6 text-grey-8">
-              Listado de casillas sugeridas a cotejo
-            </div>
-            <br />
-            <div><TablaComputadaRecuento :tipo="'cotejoRP'" /></div>
-          </q-tab-panel>
-        </q-tab-panels>
-      </q-card>
+  <template v-if="loading">
+    <div class="q-pa-md">
+      <div class="absolute-center">
+        <q-spinner-cube color="purple" size="10.5em" />
+      </div>
     </div>
-  </div>
+  </template>
+  <template v-else>
+    <div class="q-pa-lg">
+      <q-banner
+        inline-actions
+        class="text-justify bg-white"
+        style="border-radius: 20px"
+      >
+        <q-btn
+          v-for="tipo in list_Tipo_Elecciones"
+          :key="tipo"
+          @click="set_tipo_eleccion(tipo)"
+          :flat="tipo.siglas != eleccion"
+          rounded
+          color="blue-grey"
+          icon="layers"
+          :label="tipo.nombre"
+        />
+      </q-banner>
+      <div class="q-pt-md">
+        <q-card>
+          <q-tabs
+            v-model="tab"
+            class="text-grey"
+            active-color="blue-grey"
+            indicator-color="blue-grey"
+            align="justify"
+            :breakpoint="0"
+          >
+            <q-tab name="MR" label="Mayoria relativa" />
+            <q-tab
+              v-if="eleccion == 'DIP' || eleccion == 'REG'"
+              name="RP"
+              label="Representación proporcional"
+            />
+          </q-tabs>
+          <q-separator />
+          <q-tab-panels v-model="tab" animated>
+            <q-tab-panel name="MR">
+              <div class="text-h6 text-grey-8">
+                Listado de casillas sugeridas a recuento
+              </div>
+              <br />
+              <div>
+                <TablaComputadaRecuento
+                  :tipo="'recuento'"
+                  :rp="false"
+                  :tipo_id="tipo_eleccion_id"
+                  :tipo_siglas="eleccion"
+                />
+              </div>
+              <br />
+              <q-separator /><br />
+              <div class="text-h6 text-grey-8">
+                Listado de casillas sugeridas a cotejo
+              </div>
+              <br />
+              <div>
+                <TablaComputadaRecuento
+                  :tipo="'cotejo'"
+                  :rp="false"
+                  :tipo_id="tipo_eleccion_id"
+                  :tipo_siglas="eleccion"
+                />
+              </div>
+            </q-tab-panel>
+
+            <q-tab-panel name="RP">
+              <div class="text-h6 text-grey-8">
+                Listado de casillas sugeridas a recuento
+              </div>
+              <br />
+              <div>
+                <TablaComputadaRecuento
+                  :tipo="'recuento'"
+                  :rp="true"
+                  :tipo_id="tipo_eleccion_id"
+                  :tipo_siglas="eleccion"
+                />
+              </div>
+              <br />
+              <q-separator /><br />
+              <div class="text-h6 text-grey-8">
+                Listado de casillas sugeridas a cotejo
+              </div>
+              <br />
+              <div>
+                <TablaComputadaRecuento
+                  :tipo="'cotejo'"
+                  :rp="true"
+                  :tipo_id="tipo_eleccion_id"
+                  :tipo_siglas="eleccion"
+                />
+              </div>
+            </q-tab-panel>
+          </q-tab-panels>
+        </q-card>
+      </div>
+    </div>
+  </template>
 </template>
 
 <script setup>
+import { useQuasar } from "quasar";
 import { onBeforeMount, ref } from "vue";
-import TablaComputadaRecuento from "./TablaComputadaRecuento.vue";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
+import { useCapturaStore } from "src/stores/captura-store";
 import { storeToRefs } from "pinia";
+import TablaComputadaRecuento from "./TablaComputadaRecuento.vue";
 
 //-----------------------------------------------------------
-
+const $q = useQuasar();
+const capturaStore = useCapturaStore();
 const configuracionStore = useConfiguracionStore();
 const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
 const eleccion = ref("DIP");
-
+const tipo_eleccion_id = ref(null);
+const loading = ref(false);
 //-----------------------------------------------------------
 
 onBeforeMount(() => {
@@ -91,9 +132,21 @@ onBeforeMount(() => {
 //-----------------------------------------------------------
 
 const cargarData = async () => {
+  loading.value = true;
   await configuracionStore.loadTipoElecciones();
   await configuracionStore.loadPartidosPoliticos();
   await configuracionStore.loadCoaliciones();
+  tipo_eleccion_id.value = list_Tipo_Elecciones.value[0].id;
+
+  setTimeout(() => {
+    capturaStore.load_cotejo(tipo_eleccion_id.value);
+    capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
+
+    capturaStore.load_recuento(tipo_eleccion_id.value);
+    capturaStore.load_recuento_rp(tipo_eleccion_id.value);
+  }, 300);
+
+  loading.value = false;
 };
 
 const list_Cargo = ref([
@@ -101,6 +154,26 @@ const list_Cargo = ref([
   { siglas: "RP", nombre: "Representación proporcional" },
 ]);
 const tab = ref("MR");
+
+const set_tipo_eleccion = (tipo) => {
+  eleccion.value = tipo.siglas;
+  tipo_eleccion_id.value = tipo.id;
+
+  switch (eleccion.value) {
+    case "DIP":
+    case "REG":
+      capturaStore.load_cotejo(tipo_eleccion_id.value);
+      capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
+
+      capturaStore.load_recuento(tipo_eleccion_id.value);
+      capturaStore.load_recuento_rp(tipo_eleccion_id.value);
+      break;
+    case "PYS":
+      capturaStore.load_cotejo(tipo_eleccion_id.value);
+      capturaStore.load_recuento(tipo_eleccion_id.value);
+      break;
+  }
+};
 </script>
 
 <style></style>

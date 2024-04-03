@@ -1,6 +1,16 @@
 <template>
   <q-table
-    :rows="rows"
+    :loading="loading"
+    :visible-columns="visible_columns"
+    :rows="
+      rp == true
+        ? tipo == 'cotejo'
+          ? pendientes_cotejo_rp
+          : pendientes_recuento_rp
+        : tipo == 'cotejo'
+        ? pendientes_cotejo
+        : pendientes_recuento
+    "
     :columns="columns"
     :filter="filter"
     row-key="name"
@@ -43,18 +53,43 @@
 </template>
 
 <script setup>
-import { onBeforeMount, ref, defineProps } from "vue";
+import {
+  onBeforeMount,
+  ref,
+  defineProps,
+  onMounted,
+  watch,
+  watchEffect,
+} from "vue";
 import { useCapturaStore } from "src/stores/captura-store";
 import Swal from "sweetalert2";
+import { storeToRefs } from "pinia";
 
 //-------------------------------------------------------
-
+const loading = ref(false);
 const capturaStore = useCapturaStore();
+const {
+  pendientes_cotejo,
+  pendientes_cotejo_rp,
+  pendientes_recuento,
+  pendientes_recuento_rp,
+} = storeToRefs(capturaStore);
 const tipo_Computo = ref(null);
 const grupo_Trabajo = ref(null);
 const punto_Recuento = ref(null);
+const visible_columns = ref([
+  "municipio",
+  "distrito",
+  "seccion",
+  "casilla",
+  "causales",
+  "id",
+]);
 const props = defineProps({
+  tipo_siglas: { type: String, required: true },
+  tipo_id: { type: Number, required: true },
   tipo: { type: String, required: true },
+  rp: { type: Boolean, required: true },
 });
 const columns = [
   {
@@ -72,6 +107,13 @@ const columns = [
     sortable: true,
   },
   {
+    name: "distrito",
+    align: "center",
+    label: "Distrito",
+    field: "distrito",
+    sortable: true,
+  },
+  {
     name: "seccion",
     align: "center",
     label: "Sección",
@@ -83,6 +125,13 @@ const columns = [
     align: "center",
     label: "Casilla",
     field: "casilla",
+    sortable: true,
+  },
+  {
+    name: "casilla_Id",
+    align: "center",
+    label: "casilla_Id",
+    field: "casilla_Id",
     sortable: true,
   },
   {
@@ -100,6 +149,7 @@ const columns = [
     sortable: true,
   },
 ];
+
 const rows = ref([]);
 const filter = ref("");
 const pagination = ref({
@@ -109,47 +159,72 @@ const pagination = ref({
   rowsPerPage: 5,
 });
 
-onBeforeMount(() => {
-  if (props.tipo == "recuentoMR") {
-    rows.value.push({
-      municipio: "recuento municipio",
-      demarcacion: "demarcacion",
-      seccion: "seccion",
-      casilla: "casilla",
-      causales: 3,
-      id: 1,
-    });
-  } else if (props.tipo == "cotejoMR") {
-    rows.value.push({
-      municipio: "cotejo municipio",
-      demarcacion: "demarcacion",
-      seccion: "seccion",
-      casilla: "casilla",
-      causales: 3,
-      id: 1,
-    });
-  } else if (props.tipo == "recuentoRP") {
-    rows.value.push({
-      municipio: "recuento rp municipio",
-      demarcacion: "demarcacion",
-      seccion: "seccion",
-      casilla: "casilla",
-      causales: 3,
-      id: 1,
-    });
-  } else if (props.tipo == "cotejoRP") {
-    rows.value.push({
-      municipio: "cotejo rp municipio",
-      demarcacion: "demarcacion",
-      seccion: "seccion",
-      casilla: "casilla",
-      causales: 3,
-      id: 1,
-    });
+watch(props, (val) => {
+  evalua_columnas();
+});
+
+watchEffect(() => {
+  switch (props.tipo_siglas) {
+    case "DIP":
+    case "REG":
+      if (props.rp == true) {
+        if (props.tipo == "cotejo") {
+          loading.value = pendientes_cotejo_rp.value.length == 0;
+        } else {
+          loading.value = pendientes_recuento_rp.value.length == 0;
+        }
+      } else {
+        console.log("--", pendientes_recuento.value);
+        if (props.tipo == "cotejo") {
+          loading.value = pendientes_cotejo.value.length == 0;
+        } else {
+          loading.value = pendientes_recuento.value.length == 0;
+        }
+      }
+      break;
+    case "PYS":
+      if (props.tipo == "cotejo") {
+        loading.value = pendientes_cotejo.value.length == 0;
+      } else {
+        loading.value = pendientes_recuento.value.length == 0;
+      }
+      break;
   }
 });
 
-//-------------------------------------------------------
+const evalua_columnas = () => {
+  switch (props.tipo_siglas) {
+    case "DIP":
+      visible_columns.value = [
+        "municipio",
+        "distrito",
+        "seccion",
+        "casilla",
+        "causales",
+        "id",
+      ];
+      break;
+    case "PYS":
+      visible_columns.value = [
+        "municipio",
+        "seccion",
+        "casilla",
+        "causales",
+        "id",
+      ];
+      break;
+    case "REG":
+      visible_columns.value = [
+        "municipio",
+        "demarcacion",
+        "seccion",
+        "casilla",
+        "causales",
+        "id",
+      ];
+      break;
+  }
+};
 
 const recuentoAlert = () => {
   Swal.fire({
