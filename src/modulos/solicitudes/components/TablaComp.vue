@@ -31,22 +31,30 @@
                 flat
                 round
                 color="pink"
-                icon="edit_square"
-                @click="recuentoAlert(props.row)"
+                icon="search"
+                @click="verCaptura(props.row)"
               >
-                <q-tooltip>Capturar resultados</q-tooltip>
+                <q-tooltip>Ver captura</q-tooltip>
               </q-btn>
               <q-btn
                 flat
                 round
                 color="pink"
-                icon="undo"
-                @click="quitarReserva(props.row)"
+                icon="check_circle"
+                @click="aprobarSolicitud(props.row)"
               >
-                <q-tooltip>Quitar reserva</q-tooltip>
+                <q-tooltip>Aprobar solicitud</q-tooltip>
+              </q-btn>
+              <q-btn
+                flat
+                round
+                color="pink"
+                icon="cancel"
+                @click="rechazarSolicitud(props.row)"
+              >
+                <q-tooltip>Rechazar solicitud</q-tooltip>
               </q-btn>
             </div>
-
             <label v-else>{{ col.value }}</label>
           </q-td>
         </q-tr>
@@ -57,8 +65,23 @@
 
 <script setup>
 import { ref } from "vue";
+import { useCasillaStore } from "src/stores/casilla-store";
+import Swal from "sweetalert2";
 
-const rows = ref([]);
+//-----------------------------------------------------------
+
+const casillaStore = useCasillaStore();
+const rows = ref([
+  {
+    tipo_eleccion: "Diputaciones",
+    municipio: "Tepic",
+    seccion: 5,
+    casilla: 10,
+    usuario: "Karla",
+    estatus: "Pendiente",
+    id: 1,
+  },
+]);
 const columns = [
   {
     name: "tipo_eleccion",
@@ -117,4 +140,51 @@ const pagination = ref({
   page: 1,
   rowsPerPage: 5,
 });
+
+//-----------------------------------------------------------
+
+const verCaptura = async (row) => {
+  await casillaStore.load_resultados_mr(row.id);
+  casillaStore.actualizarModal(true);
+};
+
+const aprobarSolicitud = () => {
+  Swal.fire({
+    title: "¿Está seguro de aprobar la solicitud de corrección?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Si, aprobar",
+    cancelButtonText: "No, cancelar",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: "Aprobada",
+        text: "Su solicitud de corrección ha sido aprobada.",
+        icon: "success",
+      });
+    }
+  });
+};
+
+const rechazarSolicitud = () => {
+  Swal.fire({
+    title: "¿Está seguro de rechazar la solicitud de corrección?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Si, rechazar",
+    cancelButtonText: "No, cancelar",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: "Solicitud rechazada",
+        text: "Su solicitud de corrección ha sido rechazada.",
+        icon: "success",
+      });
+    }
+  });
+};
 </script>

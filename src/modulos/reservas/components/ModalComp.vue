@@ -29,7 +29,8 @@
             Total de votos sistema: {{ totalVotos }}
           </div>
         </div>
-        <q-card-section v-if="resultados.partidos.length > 0">
+
+        <q-card-section>
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
           >
@@ -65,9 +66,7 @@
             </q-card>
           </div>
         </q-card-section>
-        <q-card-section
-          v-if="props.rp == false && resultados.coaliciones.length > 0"
-        >
+        <q-card-section v-if="props.rp == false">
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
           >
@@ -113,74 +112,47 @@
         </q-card-section>
         <q-card-section class="row">
           <div class="col-lg-4 col-md-6 col-xs-6 q-pa-sm">
-            <q-card
-              style="border-radius: 8px"
-              class="my-card text-center no-box-shadow"
-            >
-              <q-card-section>
-                <div class="text-h6 text-bold text-grey-8">
-                  Candidatos no registrados
-                </div>
-              </q-card-section>
-              <q-card-section>
-                <q-input
-                  class="text-h6"
-                  v-model="
-                    resultados.encabezado.total_Votos_Candidatos_No_Registrados
-                  "
-                  mask="###"
-                  placeholder="0"
-                  :name="`myTextTotales1`"
-                  dense
-                  input-class="text-right"
-                  @keydown.enter.prevent="getFocus(1, 'totales')"
-                />
-              </q-card-section>
-            </q-card>
+            <div class="text-subtitle1 text-bold text-grey-8">
+              Candidatos no registrados
+            </div>
+            <q-input
+              class="text-h6"
+              v-model="
+                resultados.encabezado.total_Votos_Candidatos_No_Registrados
+              "
+              mask="###"
+              placeholder="0"
+              :name="`myTextTotales1`"
+              dense
+              input-class="text-right"
+              @keydown.enter.prevent="getFocus(1, 'totales')"
+            />
           </div>
           <div class="col-lg-4 col-md-6 col-xs-6 q-pa-sm">
-            <q-card
-              style="border-radius: 8px"
-              class="my-card text-center no-box-shadow"
-            >
-              <q-card-section>
-                <div class="text-h6 text-bold text-grey-8">Votos nulos</div>
-              </q-card-section>
-              <q-card-section>
-                <q-input
-                  class="text-h6"
-                  v-model="resultados.encabezado.total_Votos_Nulos"
-                  mask="###"
-                  placeholder="0"
-                  :name="`myTextTotales2`"
-                  dense
-                  input-class="text-right"
-                  @keydown.enter.prevent="getFocus(2, 'totales')"
-                />
-              </q-card-section>
-            </q-card>
+            <div class="text-subtitle1 text-bold text-grey-8">Votos nulos</div>
+            <q-input
+              class="text-h6"
+              v-model="resultados.encabezado.total_Votos_Nulos"
+              mask="###"
+              placeholder="0"
+              :name="`myTextTotales2`"
+              dense
+              input-class="text-right"
+              @keydown.enter.prevent="getFocus(2, 'totales')"
+            />
           </div>
           <div class="col-lg-4 col-md-6 col-xs-6 q-pa-sm">
-            <q-card
-              style="border-radius: 8px"
-              class="my-card text-center no-box-shadow"
-            >
-              <q-card-section>
-                <div class="text-h6 text-bold text-grey-8">Total votos</div>
-              </q-card-section>
-              <q-card-section>
-                <q-input
-                  class="text-h6"
-                  v-model="resultados.encabezado.total_Votos"
-                  mask="###"
-                  placeholder="0"
-                  :name="`myTextTotales3`"
-                  dense
-                  input-class="text-right"
-                  @keydown.enter.prevent="getFocus(3, 'totales')"
-                />
-              </q-card-section>
-            </q-card>
+            <div class="text-subtitle1 text-bold text-grey-8">Total votos</div>
+            <q-input
+              class="text-h6"
+              v-model="resultados.encabezado.total_Votos"
+              mask="###"
+              placeholder="0"
+              :name="`myTextTotales3`"
+              dense
+              input-class="text-right"
+              @keydown.enter.prevent="getFocus(3, 'totales')"
+            />
           </div>
         </q-card-section>
         <q-card-section>
@@ -208,19 +180,21 @@
 <script setup>
 import { useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
+import { computed, defineProps } from "vue";
+import { useRerservasStore } from "src/stores/reservas-store";
 import { useCapturaStore } from "src/stores/captura-store";
-import { computed, defineProps, watch } from "vue";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
 
 const $q = useQuasar();
+const reservasStore = useRerservasStore();
 const capturaStore = useCapturaStore();
-const { modal, resultados, encabezado } = storeToRefs(capturaStore);
+const { modal, encabezado } = storeToRefs(reservasStore);
+const { resultados } = storeToRefs(capturaStore);
 const props = defineProps({
+  eleccion: { type: String, required: true },
   rp: { type: Boolean, required: true },
-  tipo_id: { type: Number, required: true },
-  tipo_siglas: { type: String, required: true },
 });
 
 //----------------------------------------------------------
@@ -233,36 +207,22 @@ const totalVotos = computed(() => {
   for (let coalicion of resultados.value.coaliciones) {
     total += parseInt(coalicion.votos);
   }
-
-  if (
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
-  ) {
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-    );
-  }
-
-  if (resultados.value.encabezado.total_Votos_Nulos !== "") {
-    total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-  }
+  total += parseInt(
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
+      ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+      : 0
+  );
+  total += parseInt(
+    resultados.value.encabezado.total_Votos_Nulos != ""
+      ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+      : 0
+  );
 
   return total;
 });
 
 const actualizarModal = (valor) => {
   capturaStore.actualizarModal(valor);
-};
-
-const reload = async () => {
-  if (props.tipo_siglas == "PYS") {
-    await capturaStore.load_cotejo(props.tipo_id);
-    await capturaStore.load_recuento(props.tipo_id);
-  } else {
-    await capturaStore.load_cotejo(props.tipo_id);
-    await capturaStore.load_recuento(props.tipo_id);
-    await capturaStore.load_cotejo_rp(props.tipo_id);
-    await capturaStore.load_recuento_rp(props.tipo_id);
-  }
 };
 
 function getFocus(index, tipo) {
@@ -272,26 +232,21 @@ function getFocus(index, tipo) {
     if (elementosCoaliciones == index + 1) {
       let docu = document.getElementsByName(`myTextTotales1`);
       docu[1].focus();
-      docu[1].select();
     } else {
       let docu = document.getElementsByName(`myTextCoalicion${index + 1}`);
       docu[1].focus();
-      docu[1].select();
     }
   } else if (tipo == "partido") {
     if (elementosPartidos == index + 1) {
       let docu = document.getElementsByName(`myTextCoalicion0`);
       docu[1].focus();
-      docu[1].select();
     } else {
       let docu = document.getElementsByName(`myText${index + 1}`);
       docu[1].focus();
-      docu[1].select();
     }
   } else {
     let docu = document.getElementsByName(`myTextTotales${index + 1}`);
     docu[1].focus();
-    docu[1].select();
   }
 }
 
@@ -328,7 +283,7 @@ const onSubmit = async () => {
     );
     total += parseInt(
       resultados.value.encabezado.total_Votos_Nulos != ""
-        ? resultados.value.encabezado.total_Votos_Nulos
+        ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
         : 0
     );
 
@@ -349,7 +304,6 @@ const onSubmit = async () => {
         type: "positive",
         message: resp.data,
       });
-      reload();
       actualizarModal(false);
     } else {
       $q.notify({

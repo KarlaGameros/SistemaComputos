@@ -1,4 +1,5 @@
 import { boot } from "quasar/wrappers";
+import { EncryptStorage } from "storage-encryption";
 import axios from "axios";
 
 // Be careful when using SSR for cross-request state pollution
@@ -7,16 +8,32 @@ import axios from "axios";
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const api = axios.create({
-  baseURL: "https://localhost:7077/api",
+  baseURL: "http://sistema.ieenayarit.org:9370/api",
+  //baseURL: "http://sistema.ieenayarit.org:9670/api",
+  //baseURL: "https://localhost:7077/api",
 });
 
 api.interceptors.request.use((config) => {
   config.headers = {
-    Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImU1ZDZlZTU1LWZjNTMtNGIzMy1hMWU4LTUwZTYxNjFkMzAxNyIsImV4cCI6MTcxMTgzMjY4Nn0.Z1FtCBujwI7JUDuvX1VAv223dTRrdhDJhGEz79L_uqA`,
+    Authorization: `Bearer ${encryptStorage.decrypt("key")}`,
   };
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response.status == 401) {
+      alert("Su sesión ha expirado, sera redireccionado al logín");
+      localStorage.clear();
+      window.location = "http://sistema.ieenayarit.org:9371?return=false";
+    }
+    return Promise.reject();
+  }
+);
+
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api
 

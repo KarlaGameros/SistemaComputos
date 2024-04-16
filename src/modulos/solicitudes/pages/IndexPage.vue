@@ -3,7 +3,7 @@
     <div class="row bg-white">
       <div class="col">
         <div class="q-pa-md q-gutter-sm">
-          <div class="text-blue-grey-5 text-h6">Solicitudes de recuento</div>
+          <div class="text-blue-grey-5 text-h6">Solicitudes de corrección</div>
           <q-breadcrumbs>
             <template v-slot:separator>
               <q-icon size="1.5em" name="chevron_right" color="primary" />
@@ -15,9 +15,10 @@
       </div>
     </div>
     <TablaComp />
+    <ModalComp />
   </q-page>
 </template>
 <script setup>
 import TablaComp from "../components/TablaComp.vue";
+import ModalComp from "../../porCasilla/components/ModalComp.vue";
 </script>
-<style></style>

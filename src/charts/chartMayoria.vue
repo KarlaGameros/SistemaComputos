@@ -1,83 +1,83 @@
 <template>
   <div class="flex-center">
-    <apexchart
-      height="500px"
-      type="bar"
-      :options="options"
-      :series="series"
-    ></apexchart>
+    <div id="chart">
+      <apexchart
+        type="bar"
+        height="350"
+        :options="chartOptions"
+        :series="series"
+      ></apexchart>
+    </div>
   </div>
 </template>
 
 <script setup>
-const series = [
-  {
-    data: [44, 55, 41, 40],
-  },
-];
-var options = {
-  title: {
-    text: "Resultados",
-    align: "center",
-    style: {
-      fontSize: "24px",
-      color: "#838888",
-    },
-  },
-  annotations: {
-    points: [
-      {
-        x: "MC",
-        seriesIndex: 0,
-        label: {
-          borderColor: "#775DD0",
-          offsetY: 0,
-          style: {
-            color: "#fff",
-            background: "#775DD0",
-          },
-          text: "1000",
+import { storeToRefs } from "pinia";
+import { watch, ref } from "vue";
+import { useMayoriaStore } from "../stores/mayoria-store";
+
+const mayoriaStore = useMayoriaStore();
+const { datos_grafica } = storeToRefs(mayoriaStore);
+
+const series = ref([]);
+const chartOptions = ref(null);
+const colors = ref([]);
+
+watch(datos_grafica.value, (val) => {
+  if (val != null) {
+    series.value = [];
+    rellenarGrafica(val);
+  }
+});
+
+const rellenarGrafica = () => {
+  let categorias = [];
+  let serie = [];
+  datos_grafica.value.datos_Grafica.forEach((element) => {
+    colors.value.push(element.color);
+    categorias.push([element.nombre]);
+    serie.push(element.votos);
+  });
+  series.value.push({
+    data: serie,
+  });
+
+  chartOptions.value = {
+    chart: {
+      height: 350,
+      type: "bar",
+      events: {
+        click: function (chart, w, e) {
+          // console.log(chart, w, e)
         },
       },
-    ],
-  },
-  chart: {
-    height: 350,
-    type: "bar",
-  },
-  plotOptions: {
-    bar: {
-      borderRadius: 10,
-      columnWidth: "50%",
     },
-  },
-  dataLabels: {
-    enabled: false,
-  },
-  stroke: {
-    width: 2,
-  },
-  xaxis: {
-    labels: {
-      rotate: -45,
+    colors: colors.value,
+    plotOptions: {
+      bar: {
+        columnWidth: "45%",
+        distributed: true,
+      },
     },
-    categories: ["JHHN", "MC", "MLN", "PRI"],
-    tickPlacement: "on",
-  },
-  fill: {
-    type: "gradient",
-    gradient: {
-      shade: "light",
-      type: "horizontal",
-      shadeIntensity: 0.25,
-      gradientToColors: undefined,
-      inverseColors: true,
-      opacityFrom: 0.85,
-      opacityTo: 0.85,
-      stops: [50, 0, 100],
+    dataLabels: {
+      enabled: false,
     },
-  },
+    legend: {
+      show: false,
+    },
+    xaxis: {
+      categories: categorias,
+      labels: {
+        style: {
+          colors: colors,
+          fontSize: "12px",
+        },
+      },
+    },
+  };
 };
+
+rellenarGrafica();
 </script>
 
 <style></style>

@@ -8,7 +8,7 @@
       <q-btn
         v-for="tipo in list_Tipo_Elecciones"
         :key="tipo"
-        @click="eleccion = tipo.siglas"
+        @click="set_tipo_eleccion(tipo)"
         :flat="tipo.siglas != eleccion"
         rounded
         icon="layers"
@@ -40,7 +40,13 @@
               Listado de casillas reservadas
             </div>
             <br />
-            <div><TablaReservasComp :tipo="'reservasMR'" /></div>
+            <div>
+              <TablaReservasComp
+                :rp="false"
+                :tipo_id="tipo_eleccion_id"
+                :tipo_siglas="eleccion"
+              />
+            </div>
             <br />
           </q-tab-panel>
 
@@ -49,7 +55,13 @@
               Listado de casillas reservadas
             </div>
             <br />
-            <div><TablaReservasComp :tipo="'reservasRP'" /></div>
+            <div>
+              <TablaReservasComp
+                :rp="true"
+                :tipo_id="tipo_eleccion_id"
+                :tipo_siglas="eleccion"
+              />
+            </div>
             <br />
           </q-tab-panel>
         </q-tab-panels>
@@ -62,12 +74,18 @@
 import { onBeforeMount, ref } from "vue";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
+import { useRerservasStore } from "src/stores/reservas-store";
 import TablaReservasComp from "../components/TablaReservasComp.vue";
+
 //-----------------------------------------------------------
 
 const configuracionStore = useConfiguracionStore();
+const reservasStore = useRerservasStore();
 const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
 const eleccion = ref("DIP");
+const tipo_eleccion_id = ref(null);
+const loading = ref(false);
+const tab = ref("MR");
 
 //-----------------------------------------------------------
 
@@ -78,16 +96,32 @@ onBeforeMount(() => {
 //-----------------------------------------------------------
 
 const cargarData = async () => {
+  loading.value = true;
   await configuracionStore.loadTipoElecciones();
+  tipo_eleccion_id.value = list_Tipo_Elecciones.value[0].id;
   await configuracionStore.loadPartidosPoliticos();
   await configuracionStore.loadCoaliciones();
+  await reservasStore.load_reservas_mr(tipo_eleccion_id.value);
+  await reservasStore.load_reservas_rp(tipo_eleccion_id.value);
+  loading.value = false;
 };
 
-const list_Cargo = ref([
-  { siglas: "MR", nombre: "Mayoria relativa" },
-  { siglas: "RP", nombre: "Representación proporcional" },
-]);
-const tab = ref("MR");
+const set_tipo_eleccion = (tipo) => {
+  tab.value = "MR";
+  eleccion.value = tipo.siglas;
+  tipo_eleccion_id.value = tipo.id;
+
+  switch (eleccion.value) {
+    case "DIP":
+    case "REG":
+      reservasStore.load_reservas_mr(tipo_eleccion_id.value);
+      reservasStore.load_reservas_rp(tipo_eleccion_id.value);
+      break;
+    case "PYS":
+      reservasStore.load_reservas_mr(tipo_eleccion_id.value);
+      break;
+  }
+};
 </script>
 
 <style></style>

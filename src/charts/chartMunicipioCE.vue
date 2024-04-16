@@ -12,7 +12,7 @@
 <script setup>
 import { ref } from "vue";
 
-const items = ref(["DIP MR", "DIP RP", "PYS", "REG MR", "REG MR"]);
+const items = ref(["DIP MR", "DIP RP", "PYS", "REG MR", "REG RP"]);
 const series = [
   {
     name: "Esperadas",

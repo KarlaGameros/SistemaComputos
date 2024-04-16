@@ -29,16 +29,19 @@
     </div>
     <ReporteComp />
     <ModalComp />
+    <ModalIntegracionOficinas />
   </q-page>
 </template>
 <script setup>
 import { useConsultaStore } from "src/stores/consulta-store";
 import ReporteComp from "../components/ReporteComp.vue";
 import ModalComp from "../components/ModalComp.vue";
+import ModalIntegracionOficinas from "../components/ModalIntegracionOficinas.vue";
 
 const consultaStore = useConsultaStore();
 
 const actualizarModal = (valor) => {
+  consultaStore.actualizarModalIntegracion(false);
   consultaStore.actualizarModal(valor);
 };
 </script>

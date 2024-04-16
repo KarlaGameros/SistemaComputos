@@ -111,7 +111,7 @@ const items = ref([
   { siglas: "DIP RP", eleccion: "Diputaciones RP", progreso: 10 },
   { siglas: "PYS", eleccion: "Presidencias y Sindicaturas", progreso: 90 },
   { siglas: "REG MR", eleccion: "Regidurías MR", progreso: 100 },
-  { siglas: "REG MR", eleccion: "Regidurías RP", progreso: 35 },
+  { siglas: "REG RP", eleccion: "Regidurías RP", progreso: 35 },
 ]);
 </script>
 

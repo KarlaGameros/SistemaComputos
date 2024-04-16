@@ -2,7 +2,7 @@
   <template v-if="loading">
     <div class="q-pa-md">
       <div class="absolute-center">
-        <q-spinner-cube color="purple" size="10.5em" />
+        <q-spinner-cube color="blue-grey" size="10.5em" />
       </div>
     </div>
   </template>
@@ -60,6 +60,9 @@
               <q-separator /><br />
               <div class="text-h6 text-grey-8">
                 Listado de casillas sugeridas a cotejo
+                <q-icon name="help" color="green">
+                  <q-tooltip>No cuenta con causales para recuento</q-tooltip>
+                </q-icon>
               </div>
               <br />
               <div>
@@ -115,7 +118,8 @@ import { useCapturaStore } from "src/stores/captura-store";
 import { storeToRefs } from "pinia";
 import TablaComputadaRecuento from "./TablaComputadaRecuento.vue";
 
-//-----------------------------------------------------------
+//----------------------------------------------------------
+
 const $q = useQuasar();
 const capturaStore = useCapturaStore();
 const configuracionStore = useConfiguracionStore();
@@ -123,13 +127,19 @@ const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
 const eleccion = ref("DIP");
 const tipo_eleccion_id = ref(null);
 const loading = ref(false);
-//-----------------------------------------------------------
+const tab = ref("MR");
+
+//----------------------------------------------------------
 
 onBeforeMount(() => {
   cargarData();
 });
 
-//-----------------------------------------------------------
+//----------------------------------------------------------
+
+const modalCausales = (valor) => {
+  capturaStore.actualizarModalCausales(valor);
+};
 
 const cargarData = async () => {
   loading.value = true;
@@ -149,13 +159,8 @@ const cargarData = async () => {
   loading.value = false;
 };
 
-const list_Cargo = ref([
-  { siglas: "MR", nombre: "Mayoria relativa" },
-  { siglas: "RP", nombre: "Representación proporcional" },
-]);
-const tab = ref("MR");
-
 const set_tipo_eleccion = (tipo) => {
+  tab.value = "MR";
   eleccion.value = tipo.siglas;
   tipo_eleccion_id.value = tipo.id;
 

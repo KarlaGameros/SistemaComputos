@@ -6,13 +6,19 @@
     transition-hide="scale"
   >
     <q-card class="bg-blue-grey-1" style="width: auto; max-width: 200vw">
-      <q-form @submit="onSubmit">
+      <q-form @submit="solicitarCorreccion">
         <div class="flotante">
-          <div class="row bg-blue-grey-3 q-pl-md text-bold">
+          <div class="row bg-blue-grey-3 text-bold q-pl-md">
             <div class="text-h6">
-              Resultados de la sección {{ encabezado.seccion }} de la casilla
-              {{ encabezado.casilla }} de la elección a
-              {{ encabezado.eleccion }}.
+              Resultados de la sección {{ resultado_casilla.seccion }} de la
+              casilla {{ resultado_casilla.casilla }} de la elección a
+              {{
+                props.eleccion == "DIP"
+                  ? "Diputaciones"
+                  : props.eleccion == "PYS"
+                  ? "Presidencias y Sindicaturas"
+                  : "Regidurías"
+              }}.
             </div>
 
             <q-space />
@@ -26,10 +32,10 @@
             />
           </div>
           <div class="row bg-blue-grey-3 q-pl-md text-bold text-h6">
-            Total de votos sistema: {{ totalVotos }}
+            Total de votos sistema: {{ resultados.encabezado.total_Sistema }}
           </div>
         </div>
-        <q-card-section v-if="resultados.partidos.length > 0">
+        <q-card-section>
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
           >
@@ -38,36 +44,31 @@
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
-              v-for="(partido, index) in resultados.partidos"
+              v-for="partido in resultados.partidos"
               :key="partido"
               style="border-radius: 8px"
               class="my-card text-center no-box-shadow"
             >
               <q-card-section>
-                <q-avatar size="70px" font-size="82px" square>
+                <q-avatar size="70px" square>
                   <img :src="partido.logo_Url" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-ma-sm">
                   {{ partido.partido }}
                 </div>
-              </q-card-section>
-              <q-card-section>
                 <q-input
                   class="text-h6"
+                  disable
                   mask="###"
-                  :name="`myText${index}`"
                   dense
                   input-class="text-right"
                   v-model="partido.votos"
-                  @keydown.enter.prevent="getFocus(index, 'partido')"
                 />
               </q-card-section>
             </q-card>
           </div>
         </q-card-section>
-        <q-card-section
-          v-if="props.rp == false && resultados.coaliciones.length > 0"
-        >
+        <q-card-section v-if="props.rp == false">
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
           >
@@ -76,7 +77,7 @@
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
-              v-for="(coalicion, index) in resultados.coaliciones"
+              v-for="coalicion in resultados.coaliciones"
               :key="coalicion"
               style="border-radius: 8px"
               class="my-card text-center no-box-shadow"
@@ -92,12 +93,11 @@
               <q-card-section>
                 <q-input
                   class="text-h6"
+                  disable
                   mask="###"
-                  :name="`myTextCoalicion${index}`"
                   dense
                   input-class="text-right"
                   v-model="coalicion.votos"
-                  @keydown.enter.prevent="getFocus(index, 'coalicion')"
                 />
               </q-card-section>
             </q-card>
@@ -125,15 +125,13 @@
               <q-card-section>
                 <q-input
                   class="text-h6"
+                  disable
+                  mask="###"
+                  dense
+                  input-class="text-right"
                   v-model="
                     resultados.encabezado.total_Votos_Candidatos_No_Registrados
                   "
-                  mask="###"
-                  placeholder="0"
-                  :name="`myTextTotales1`"
-                  dense
-                  input-class="text-right"
-                  @keydown.enter.prevent="getFocus(1, 'totales')"
                 />
               </q-card-section>
             </q-card>
@@ -149,13 +147,12 @@
               <q-card-section>
                 <q-input
                   class="text-h6"
+                  disable
                   v-model="resultados.encabezado.total_Votos_Nulos"
                   mask="###"
                   placeholder="0"
-                  :name="`myTextTotales2`"
                   dense
                   input-class="text-right"
-                  @keydown.enter.prevent="getFocus(2, 'totales')"
                 />
               </q-card-section>
             </q-card>
@@ -171,13 +168,12 @@
               <q-card-section>
                 <q-input
                   class="text-h6"
+                  disable
                   v-model="resultados.encabezado.total_Votos"
                   mask="###"
                   placeholder="0"
-                  :name="`myTextTotales3`"
                   dense
                   input-class="text-right"
-                  @keydown.enter.prevent="getFocus(3, 'totales')"
                 />
               </q-card-section>
             </q-card>
@@ -192,8 +188,9 @@
                 @click="actualizarModal(false)"
               />
               <q-btn
-                label="Guardar"
-                @click="onSubmit"
+                v-if="modulo == null ? false : modulo.registrar"
+                label="Solicitar corrección"
+                type="submit"
                 color="secondary"
                 class="q-ml-sm"
               />
@@ -208,157 +205,65 @@
 <script setup>
 import { useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
-import { useCapturaStore } from "src/stores/captura-store";
-import { computed, defineProps, watch } from "vue";
+import { defineProps, onBeforeMount } from "vue";
+import { useCasillaStore } from "src/stores/casilla-store";
+import { useAuthStore } from "src/stores/auth-store";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
 
 const $q = useQuasar();
-const capturaStore = useCapturaStore();
-const { modal, resultados, encabezado } = storeToRefs(capturaStore);
+const casillaStore = useCasillaStore();
+const authStore = useAuthStore();
+const { modulo } = storeToRefs(authStore);
+const { resultados, modal, resultado_casilla } = storeToRefs(casillaStore);
 const props = defineProps({
+  eleccion: { type: String, required: true },
   rp: { type: Boolean, required: true },
-  tipo_id: { type: Number, required: true },
-  tipo_siglas: { type: String, required: true },
+});
+const siglas = "SC-REG-CAS";
+
+//--------------------------------------------------------------------
+
+onBeforeMount(() => {
+  leerPermisos();
 });
 
 //----------------------------------------------------------
 
-const totalVotos = computed(() => {
-  let total = 0;
-  for (let partido of resultados.value.partidos) {
-    total += parseInt(partido.votos);
-  }
-  for (let coalicion of resultados.value.coaliciones) {
-    total += parseInt(coalicion.votos);
-  }
-
-  if (
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
-  ) {
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-    );
-  }
-
-  if (resultados.value.encabezado.total_Votos_Nulos !== "") {
-    total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-  }
-
-  return total;
-});
+const leerPermisos = async () => {
+  $q.loading.show();
+  await authStore.loadModulo(siglas);
+  $q.loading.hide();
+};
 
 const actualizarModal = (valor) => {
-  capturaStore.actualizarModal(valor);
+  casillaStore.actualizarModal(valor);
 };
 
-const reload = async () => {
-  if (props.tipo_siglas == "PYS") {
-    await capturaStore.load_cotejo(props.tipo_id);
-    await capturaStore.load_recuento(props.tipo_id);
-  } else {
-    await capturaStore.load_cotejo(props.tipo_id);
-    await capturaStore.load_recuento(props.tipo_id);
-    await capturaStore.load_cotejo_rp(props.tipo_id);
-    await capturaStore.load_recuento_rp(props.tipo_id);
-  }
-};
-
-function getFocus(index, tipo) {
-  let elementosPartidos = resultados.value.partidos.length;
-  let elementosCoaliciones = resultados.value.coaliciones.length;
-  if (tipo == "coalicion") {
-    if (elementosCoaliciones == index + 1) {
-      let docu = document.getElementsByName(`myTextTotales1`);
-      docu[1].focus();
-      docu[1].select();
-    } else {
-      let docu = document.getElementsByName(`myTextCoalicion${index + 1}`);
-      docu[1].focus();
-      docu[1].select();
-    }
-  } else if (tipo == "partido") {
-    if (elementosPartidos == index + 1) {
-      let docu = document.getElementsByName(`myTextCoalicion0`);
-      docu[1].focus();
-      docu[1].select();
-    } else {
-      let docu = document.getElementsByName(`myText${index + 1}`);
-      docu[1].focus();
-      docu[1].select();
-    }
-  } else {
-    let docu = document.getElementsByName(`myTextTotales${index + 1}`);
-    docu[1].focus();
-    docu[1].select();
-  }
-}
-
-const onSubmit = async () => {
-  let resp = null;
-  $q.dialog({
-    title: "¿Esta seguro de enviar los resultados?",
-    message: "Será afectada la base de datos.",
-    icon: "Warning",
-    persistent: true,
-    transitionShow: "scale",
-    transitionHide: "scale",
-    ok: {
-      color: "positive",
-      label: "Sí, enviar!",
+const solicitarCorreccion = async () => {
+  casillaStore.actualizarModal(false);
+  Swal.fire({
+    title: "¿Está seguro de solicitar corrección?",
+    text: "Se modificará la base de datos",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Sí, solicitar!",
+    cancelButtonText: "No, cancelar",
+    customClass: {
+      container: "my-swal",
     },
-    cancel: {
-      color: "negative",
-      label: " No, Cancelar!",
-    },
-  }).onOk(async () => {
-    let total = 0;
-    for (let partido of resultados.value.partidos) {
-      total += parseInt(partido.votos);
-    }
-    for (let coalicion of resultados.value.coaliciones) {
-      total += parseInt(coalicion.votos);
-    }
-
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
-        ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-        : 0
-    );
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Nulos != ""
-        ? resultados.value.encabezado.total_Votos_Nulos
-        : 0
-    );
-
-    resultados.value.encabezado.total_Sistema = parseInt(total);
-    resultados.value.encabezado.total_Votos = parseInt(
-      resultados.value.encabezado.total_Votos
-    );
-    $q.loading.show();
-    if (props.rp == true) {
-      resp = await capturaStore.registrarResultadosRp(resultados.value);
-    } else {
-      resp = await capturaStore.registrarResultados(resultados.value);
-    }
-
-    if (resp.success) {
-      $q.notify({
-        position: "top-right",
-        type: "positive",
-        message: resp.data,
-      });
-      reload();
-      actualizarModal(false);
-    } else {
-      $q.notify({
-        position: "top-right",
-        type: "negative",
-        message: resp.data,
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: "Correccion solicitada!",
+        text: "Su corrección ha sido solicitada",
+        icon: "success",
+        cancelButtonText: "Cerrar",
       });
     }
-    $q.loading.hide();
   });
 };
 </script>

@@ -15,7 +15,7 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
     //TIPO DE ELECCIONES
     async loadTipoElecciones() {
       try {
-        let resp = await api.get("/Tipos_Elecciones");
+        let resp = await api.get("/Tipos_Elecciones/Jornada");
         let { data } = resp.data;
         let listActivo = [];
         listActivo = data.filter((x) => x.activo == true);
@@ -25,6 +25,8 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
             nombre: tipo.nombre,
             siglas: tipo.siglas,
             activo: tipo.activo,
+            value: tipo.id,
+            label: tipo.nombre,
           };
         });
         this.list_Tipo_Elecciones = listTipoElecciones;
