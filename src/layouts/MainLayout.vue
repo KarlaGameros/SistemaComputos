@@ -17,9 +17,9 @@
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <div class="text-weight-bold text-black q-pa-md">
+        <div class="text-weight-bold text-grey-8 q-pa-md">
           <br />
-          Bienvenido(a) {{ userName }}
+          Bienvenido(a) {{ usuario_Nombre }}
         </div>
         <q-item
           clickable
@@ -156,7 +156,7 @@ const authStore = useAuthStore();
 const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const usuario = ref("");
 const userName = ref("");
-const { modulos, sistemas, apps } = storeToRefs(authStore);
+const { modulos, sistemas, apps, usuario_Nombre } = storeToRefs(authStore);
 const CatalogosConList = ref([]);
 
 function toggleLeftDrawer() {
@@ -217,6 +217,7 @@ const loadMenu = async () => {
   await authStore.loadSistemas();
   await authStore.loadModulos();
   await authStore.loadPerfil();
+  await authStore.loadUsuario();
   modulos.value.forEach((element) => {
     switch (element.siglas_Modulo) {
       case "SC-CAP-RES":

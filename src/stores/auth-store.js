@@ -9,6 +9,7 @@ export const useAuthStore = defineStore("auth", {
     sistemas: [],
     apps: [],
     modulo: null,
+    usuario_Nombre: null,
   }),
   actions: {
     async loadSistemas() {
@@ -132,6 +133,19 @@ export const useAuthStore = defineStore("auth", {
           (x) => x.sistema_Id == parseInt(localStorage.getItem("sistema"))
         );
         localStorage.setItem("perfil", filtro.perfil_Id);
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    async loadUsuario() {
+      try {
+        const resp = await api.get("/Oficinas/GetUsuario");
+        let { data } = resp.data;
+        this.usuario_Nombre = data.nombre_Completo;
       } catch (error) {
         return {
           success: false,
