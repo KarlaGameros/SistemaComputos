@@ -54,10 +54,10 @@
             />
           </div>
           <q-select
-            v-if="tipo_Eleccion.siglas == 'DIP'"
+            v-if="tipo_Eleccion.siglas == 'DIP' && tipo_Candidatura == 'MR'"
             v-model="distrito_Id"
             :options="list_Distritos"
-            label="Distrio"
+            label="Distrito"
             lazy-rules
             :rules="[(val) => !!val || 'Seleccione distrito']"
           />

@@ -96,7 +96,7 @@
           <q-item-section avatar>
             <q-icon name="bar_chart" />
           </q-item-section>
-          <q-item-section> Mayoria </q-item-section>
+          <q-item-section> Mayoría </q-item-section>
         </q-item>
         <q-item
           v-if="CatalogosConList.some((element) => element == 'SC-REG-SOL')"

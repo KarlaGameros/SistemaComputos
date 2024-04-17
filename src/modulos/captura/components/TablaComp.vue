@@ -20,7 +20,7 @@
           :flat="tipo.siglas != eleccion"
           rounded
           color="blue-grey"
-          icon="layers"
+          icon="how_to_vote"
           :label="tipo.nombre"
         />
       </q-banner>
@@ -34,7 +34,7 @@
             align="justify"
             :breakpoint="0"
           >
-            <q-tab name="MR" label="Mayoria relativa" />
+            <q-tab name="MR" label="Mayoría relativa" />
             <q-tab
               v-if="eleccion == 'DIP' || eleccion == 'REG'"
               name="RP"

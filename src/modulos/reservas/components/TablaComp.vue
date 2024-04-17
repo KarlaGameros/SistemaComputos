@@ -11,7 +11,7 @@
         @click="set_tipo_eleccion(tipo)"
         :flat="tipo.siglas != eleccion"
         rounded
-        icon="layers"
+        icon="how_to_vote"
         color="blue-grey"
         :label="tipo.nombre"
       />
