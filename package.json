@@ -1,8 +1,8 @@
 {
   "name": "sistemacomputos",
   "version": "0.0.1",
-  "description": "A Quasar Project",
-  "productName": "Sistema computos",
+  "description": "Sistema de cómputos",
+  "productName": "Sistema de cómputos",
   "author": "KarlaGameros <136762633+KarlaGameros@users.noreply.github.com>",
   "private": true,
   "scripts": {

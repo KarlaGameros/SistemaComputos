@@ -98,7 +98,7 @@ const visible_columns = ref([
   "distrito",
   "seccion",
   "casilla",
-  "causales",
+  "total_Causales",
   "id",
 ]);
 const columns = [
@@ -138,10 +138,10 @@ const columns = [
     sortable: true,
   },
   {
-    name: "causales",
+    name: "total_Causales",
     align: "center",
     label: "No. Causales",
-    field: "causales",
+    field: "total_Causales",
     sortable: true,
   },
   {
@@ -207,7 +207,7 @@ const evalua_columnas = () => {
         "distrito",
         "seccion",
         "casilla",
-        "causales",
+        "total_Causales",
         "id",
       ];
       break;
@@ -216,7 +216,7 @@ const evalua_columnas = () => {
         "municipio",
         "seccion",
         "casilla",
-        "causales",
+        "total_Causales",
         "id",
       ];
       break;
@@ -226,7 +226,7 @@ const evalua_columnas = () => {
         "demarcacion",
         "seccion",
         "casilla",
-        "causales",
+        "total_Causales",
         "id",
       ];
       break;
@@ -450,5 +450,3 @@ const quitarReserva = async (id) => {
   });
 };
 </script>
-
-<style></style>

@@ -104,7 +104,6 @@
                 </template>
               </q-table>
             </q-tab-panel>
-
             <q-tab-panel name="RP">
               <q-table
                 :loading="loading"
@@ -296,10 +295,12 @@ const verResultados = async (row, tipo) => {
     messageColor: "black",
   });
   await casillaStore.load_por_casilla_id(
+    row.id,
     row.municipio,
     row.seccion,
     row.casilla,
-    row.tipo
+    row.tipo,
+    tipo
   );
   casillaStore.initResultados();
   if (tipo == "MR") {

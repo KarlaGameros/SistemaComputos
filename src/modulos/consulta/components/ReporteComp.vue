@@ -11,10 +11,10 @@
             : "Regidurías"
         }}
         {{ encabezado.tipo_Candidatura }}
-        -
+
         {{
-          encabezado.eleccion == "DIP"
-            ? `Distrito ${encabezado.distrito}`
+          encabezado.eleccion == "DIP" && resultados.rp == false
+            ? `- Distrito ${encabezado.distrito}`
             : encabezado.eleccion == "PYS"
             ? encabezado.municipio
             : encabezado.eleccion == "REG"
@@ -204,7 +204,10 @@
       </div>
       <!------------------------------------------------------------->
       <div
-        v-if="resultados.coaliciones_Actor.length != 0"
+        v-if="
+          resultados.coaliciones_Actor.length != 0 ||
+          resultados.partidos_Actor.length != 0
+        "
         class="col-12 bg-white text-h6 text-center text-bold"
       >
         Distribución por actor político

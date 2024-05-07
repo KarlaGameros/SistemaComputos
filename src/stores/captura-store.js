@@ -372,7 +372,7 @@ export const useCapturaStore = defineStore("useCapturaStore", {
               },
               {
                 causal:
-                  "Votos para un solo Partido Político, Coalición o Candidato Independiente",
+                  "Votos para un solo Partido Político, Coalición, Candidatura Común o Independiente",
                 cumple: data.causal_5,
               },
               {

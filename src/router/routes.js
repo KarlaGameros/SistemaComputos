@@ -30,6 +30,11 @@ const routes = [
         component: () => import("../modulos/porCasilla/pages/IndexPage"),
       },
       {
+        path: "/votoAnticipado",
+        name: "votoAnticipado",
+        component: () => import("../modulos/votoAnticipado/pages/IndexPage"),
+      },
+      {
         path: "/mayoria",
         name: "mayoria",
         component: () => import("../modulos/mayoria/pages/IndexPage"),

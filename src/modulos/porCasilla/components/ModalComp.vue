@@ -35,12 +35,11 @@
             Total de votos sistema: {{ resultados.encabezado.total_Sistema }}
           </div>
         </div>
+        <br />
+        <div class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6">
+          Partidos políticos
+        </div>
         <q-card-section>
-          <div
-            class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
-          >
-            Partidos políticos
-          </div>
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
@@ -50,7 +49,7 @@
               class="my-card text-center no-box-shadow"
             >
               <q-card-section>
-                <q-avatar size="70px" square>
+                <q-avatar style="width: auto" square>
                   <img :src="partido.logo_Url" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-ma-sm">
@@ -68,12 +67,13 @@
             </q-card>
           </div>
         </q-card-section>
+        <div
+          v-if="props.rp == false"
+          class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
+        >
+          Coaliciones
+        </div>
         <q-card-section v-if="props.rp == false">
-          <div
-            class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
-          >
-            Coaliciones
-          </div>
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
@@ -103,14 +103,9 @@
             </q-card>
           </div>
         </q-card-section>
-        <q-card-section>
-          <div
-            class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
-          >
-            Totales
-          </div>
-          <br />
-        </q-card-section>
+        <div class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6">
+          Totales
+        </div>
         <q-card-section class="row">
           <div class="col-lg-4 col-md-6 col-xs-6 q-pa-sm">
             <q-card
@@ -203,11 +198,12 @@
 </template>
 
 <script setup>
-import { useQuasar } from "quasar";
+import { useQuasar, QSpinnerCube } from "quasar";
 import { storeToRefs } from "pinia";
-import { defineProps, onBeforeMount } from "vue";
+import { defineProps, onBeforeMount, ref } from "vue";
 import { useCasillaStore } from "src/stores/casilla-store";
 import { useAuthStore } from "src/stores/auth-store";
+import { useSolicitudesStore } from "src/stores/solicitudes-store";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
@@ -215,6 +211,7 @@ import Swal from "sweetalert2";
 const $q = useQuasar();
 const casillaStore = useCasillaStore();
 const authStore = useAuthStore();
+const solicitudesStore = useSolicitudesStore();
 const { modulo } = storeToRefs(authStore);
 const { resultados, modal, resultado_casilla } = storeToRefs(casillaStore);
 const props = defineProps({
@@ -222,6 +219,7 @@ const props = defineProps({
   rp: { type: Boolean, required: true },
 });
 const siglas = "SC-REG-CAS";
+const motivo = ref(null);
 
 //--------------------------------------------------------------------
 
@@ -245,24 +243,62 @@ const solicitarCorreccion = async () => {
   casillaStore.actualizarModal(false);
   Swal.fire({
     title: "¿Está seguro de solicitar corrección?",
-    text: "Se modificará la base de datos",
+    inputLabel: "Especifique motivo",
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
     confirmButtonText: "Sí, solicitar!",
     cancelButtonText: "No, cancelar",
+    input: "text",
+    inputAttributes: {
+      autocapitalize: "off",
+    },
     customClass: {
       container: "my-swal",
     },
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: "Correccion solicitada!",
-        text: "Su corrección ha sido solicitada",
-        icon: "success",
-        cancelButtonText: "Cerrar",
+    inputValidator: (value) => {
+      return new Promise((resolve) => {
+        if (value != "") {
+          motivo.value = value;
+          resolve();
+        } else {
+          resolve("Campo vacio");
+        }
       });
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      $q.loading.show({
+        spinner: QSpinnerCube,
+        spinnerColor: "pink",
+        spinnerSize: 140,
+        backgroundColor: "purple-2",
+        message: "Espere un momento porfavor...",
+        messageColor: "black",
+      });
+      let motivoObj = { motivo: motivo.value };
+      let resp = await solicitudesStore.solicitarCorreccion(
+        resultado_casilla.value.id,
+        resultado_casilla.value.tipoCandidatura,
+        motivoObj
+      );
+      if (resp.success == true) {
+        Swal.fire({
+          title: "Correccion solicitada!",
+          text: "Su corrección ha sido solicitada",
+          icon: "success",
+          cancelButtonText: "Cerrar",
+        });
+      } else {
+        Swal.fire({
+          title: "Ha ocurrido un error",
+          text: resp.data,
+          icon: "error",
+          cancelButtonText: "Cerrar",
+        });
+      }
+      $q.loading.hide();
     }
   });
 };

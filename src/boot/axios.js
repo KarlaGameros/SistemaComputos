@@ -10,9 +10,9 @@ import axios from "axios";
 // for each client)
 const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const api = axios.create({
+  //baseURL: "https://3f89-177-226-124-12.ngrok-free.app/api",
   baseURL: "http://sistema.ieenayarit.org:9370/api",
-  //baseURL: "http://sistema.ieenayarit.org:9670/api",
-  //baseURL: "https://localhost:7077/api",
+  //baseURL: "https://api.sistemas-ieenayarit.org/api",
 });
 
 api.interceptors.request.use((config) => {
@@ -22,17 +22,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// api.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     if (error.response.status == 401) {
-//       alert("Su sesión ha expirado, sera redireccionado al logín");
-//       localStorage.clear();
-//       window.location = "http://sistema.ieenayarit.org:9371?return=false";
-//     }
-//     return Promise.reject();
-//   }
-// );
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response.status == 401) {
+      alert("Su sesión ha expirado, sera redireccionado al logín");
+      sessionStorage.clear();
+      window.location = "https://acceso.sistemas-ieenayarit.org";
+    }
+    return Promise.reject();
+  }
+);
 
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

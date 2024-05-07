@@ -125,12 +125,12 @@ export const useConsultaStore = defineStore("useConsultaStore", {
     },
 
     //-----------------------------------------------------------
-    async cosultaResultadosRP(eleccion_id, municipio_id, distrito_id) {
+    async cosultaResultadosRP(eleccion_id, municipio_id) {
       try {
         let resp = null;
         if (municipio_id == null) {
           resp = await api.get(
-            `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}&Distrito=${distrito_id.value}`
+            `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}`
           );
         } else {
           resp = await api.get(
@@ -139,6 +139,7 @@ export const useConsultaStore = defineStore("useConsultaStore", {
         }
         if (resp.status == 200) {
           const { success, data } = resp.data;
+
           if (success) {
             this.resultados.rp = true;
             this.resultados.partidos = data.partidos;

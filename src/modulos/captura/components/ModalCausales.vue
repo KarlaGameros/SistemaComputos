@@ -39,11 +39,7 @@
       <q-card-section>
         <div class="col-12 justify-end">
           <div class="text-right q-gutter-xs">
-            <q-btn
-              label="Cancelar"
-              color="red"
-              @click="actualizarModal(false)"
-            />
+            <q-btn label="Cerrar" color="red" @click="actualizarModal(false)" />
           </div>
         </div>
       </q-card-section>

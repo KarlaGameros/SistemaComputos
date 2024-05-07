@@ -194,8 +194,7 @@ const consultar = async () => {
   } else {
     await consultaStore.cosultaResultadosRP(
       tipo_Eleccion.value.id,
-      municipio_Id.value,
-      distrito_Id.value
+      municipio_Id.value
     );
   }
   $q.loading.hide();

@@ -17,9 +17,11 @@
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
+        <div class="text-center">
+          <q-img src="../assets/Computos.png" />
+        </div>
         <div class="text-weight-bold text-grey-8 q-pa-md">
-          <br />
-          Bienvenido(a) {{ usuario_Nombre }}
+          Bienvenido(a) <br />{{ usuario_Nombre }}
         </div>
         <q-item
           clickable
@@ -84,6 +86,18 @@
             <q-icon name="archive" />
           </q-item-section>
           <q-item-section> Por casilla </q-item-section>
+        </q-item>
+        <q-item
+          clickable
+          v-ripple
+          class="text-grey-8"
+          :to="{ name: 'votoAnticipado' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="how_to_vote" />
+          </q-item-section>
+          <q-item-section> Voto anticipado </q-item-section>
         </q-item>
         <q-item
           v-if="CatalogosConList.some((element) => element == 'SC-MAY-RES')"
@@ -199,9 +213,12 @@ const show = () => {
   }).onOk((action) => {
     if (action.label == "Cerrar sesión") {
       localStorage.clear();
-      window.location = "http://sistema.ieenayarit.org:9371/";
+      sessionStorage.clear();
+      window.location = "https://acceso.sistemas-ieenayarit.org";
     } else if (action.label == "Ir a universo") {
-      window.location = "http://sistema.ieenayarit.org:9370/";
+      window.location = `https://acceso.sistemas-ieenayarit.org?key=${encryptStorage.decrypt(
+        "key"
+      )}&UserName=${encryptStorage.decrypt("userNameL")}`;
     } else {
       window.location =
         action.url +
