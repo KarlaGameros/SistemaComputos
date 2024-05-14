@@ -45,7 +45,6 @@
               row-key="name"
               v-model:pagination="pagination"
               color="pink"
-              class="text-grey-8"
             >
               <template v-slot:top-right>
                 <q-input
@@ -143,7 +142,6 @@
               row-key="name"
               v-model:pagination="pagination"
               color="pink"
-              class="text-grey-8"
             >
               <template v-slot:top-right>
                 <q-input

@@ -13,6 +13,13 @@
               Resultados de la sección {{ encabezado.seccion }} de la casilla
               {{ encabezado.casilla }} de la elección a
               {{ encabezado.eleccion }}.
+              {{
+                encabezado.eleccion == "Diputaciones"
+                  ? `Municipio ${encabezado.municipio} - Distrito ${encabezado.distrito}`
+                  : encabezado.eleccion == "Regidurías"
+                  ? `Municipio ${encabezado.municipio} - ${encabezado.demarcacion}`
+                  : `Municipio ${encabezado.municipio}`
+              }}
             </div>
 
             <q-space />
@@ -44,7 +51,7 @@
               class="my-card text-center no-box-shadow"
             >
               <q-card-section>
-                <q-avatar size="70px" font-size="82px" square>
+                <q-avatar style="width: auto" square>
                   <img :src="partido.logo_Url" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-ma-sm">

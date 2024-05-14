@@ -137,10 +137,6 @@ onBeforeMount(() => {
 
 //----------------------------------------------------------
 
-const modalCausales = (valor) => {
-  capturaStore.actualizarModalCausales(valor);
-};
-
 const cargarData = async () => {
   loading.value = true;
   await configuracionStore.loadTipoElecciones();

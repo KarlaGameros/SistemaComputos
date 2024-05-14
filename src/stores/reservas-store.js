@@ -28,7 +28,6 @@ export const useRerservasStore = defineStore("useRerservasStore", {
         );
         if (resp.status == 200) {
           const { success, data } = resp.data;
-          console.log(data);
           if (success) {
             this.list_reservas_mr = data.map((element) => {
               return {

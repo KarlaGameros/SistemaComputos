@@ -234,6 +234,9 @@ const evalua_columnas = () => {
 };
 
 const recuentoAlert = (row) => {
+  encabezado.value.distrito = row.distrito;
+  encabezado.value.municipio = row.municipio;
+  encabezado.value.demarcacion = row.demarcacion;
   encabezado.value.seccion = row.seccion;
   encabezado.value.casilla = row.casilla;
   encabezado.value.eleccion =
@@ -407,45 +410,41 @@ const resumen = () => {
 };
 
 const quitarReserva = async (id) => {
-  $q.dialog({
+  Swal.fire({
     title: "Quitar reserva",
-    message: "¿Está seguro de quitar la reserva?",
-    icon: "Warning",
-    persistent: true,
-    transitionShow: "scale",
-    transitionHide: "scale",
-    ok: {
-      color: "positive",
-      label: "¡Sí!, aceptar",
-    },
-    cancel: {
-      color: "negative",
-      label: " No Cancelar",
-    },
-  }).onOk(async () => {
-    $q.loading.show();
-    let resp = null;
-    if (props.rp == true) {
-      resp = await reservasStore.quitarReservaRp(id);
-    } else {
-      resp = await reservasStore.quitarReservaMr(id);
-    }
-    if (resp.success) {
-      $q.loading.hide();
-      $q.notify({
-        position: "top-right",
-        type: "positive",
-        message: resp.data,
-      });
-      await reservasStore.load_reservas_mr(props.tipo_id);
-      await reservasStore.load_reservas_rp(props.tipo_id);
-    } else {
-      $q.loading.hide();
-      $q.notify({
-        position: "top-right",
-        type: "negative",
-        message: resp.data,
-      });
+    text: "¿Está seguro de quitar la reserva?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Sí, quitar!",
+    cancelButtonText: "Cancelar",
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      $q.loading.show();
+      let resp = null;
+      if (props.rp == true) {
+        resp = await reservasStore.quitarReservaRp(id);
+      } else {
+        resp = await reservasStore.quitarReservaMr(id);
+      }
+      if (resp.success) {
+        $q.loading.hide();
+        $q.notify({
+          position: "top-right",
+          type: "positive",
+          message: resp.data,
+        });
+        await reservasStore.load_reservas_mr(props.tipo_id);
+        await reservasStore.load_reservas_rp(props.tipo_id);
+      } else {
+        $q.loading.hide();
+        $q.notify({
+          position: "top-right",
+          type: "negative",
+          message: resp.data,
+        });
+      }
     }
   });
 };

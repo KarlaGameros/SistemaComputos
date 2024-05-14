@@ -14,7 +14,6 @@
         <q-btn flat round dense icon="apps" @click="show" />
       </q-toolbar>
     </q-header>
-
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
         <div class="text-center">
@@ -99,8 +98,8 @@
           </q-item-section>
           <q-item-section> Voto anticipado </q-item-section>
         </q-item>
+        <!-- v-if="CatalogosConList.some((element) => element == 'SC-MAY-RES')" -->
         <q-item
-          v-if="CatalogosConList.some((element) => element == 'SC-MAY-RES')"
           clickable
           v-ripple
           class="text-grey-8"
@@ -140,11 +139,9 @@
         </q-item>
       </q-list>
     </q-drawer>
-
     <q-page-container>
       <router-view />
     </q-page-container>
-
     <q-footer elevated class="bg-pink-ieen text-white">
       <q-toolbar>
         <q-toolbar-title>
@@ -159,9 +156,11 @@
 import { storeToRefs } from "pinia";
 import { useQuasar } from "quasar";
 import { useAuthStore } from "src/stores/auth-store";
-import { defineComponent, onBeforeMount, ref } from "vue";
+import { onBeforeMount, ref } from "vue";
 import { useRoute } from "vue-router";
 import { EncryptStorage } from "storage-encryption";
+
+//----------------------------------------------------------
 
 const leftDrawerOpen = ref(false);
 const $q = useQuasar();
@@ -173,9 +172,13 @@ const userName = ref("");
 const { modulos, sistemas, apps, usuario_Nombre } = storeToRefs(authStore);
 const CatalogosConList = ref([]);
 
+//----------------------------------------------------------
+
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
+
+//----------------------------------------------------------
 
 onBeforeMount(async () => {
   if (route.query.key) {
@@ -205,6 +208,8 @@ onBeforeMount(async () => {
   await loadMenu();
 });
 
+//----------------------------------------------------------
+
 const show = () => {
   $q.bottomSheet({
     message: "Aplicaciones",
@@ -228,6 +233,8 @@ const show = () => {
     }
   });
 };
+
+//----------------------------------------------------------
 
 const loadMenu = async () => {
   $q.loading.show();
@@ -257,6 +264,9 @@ const loadMenu = async () => {
         break;
       case "SC-PAN-RES":
         CatalogosConList.value.push("SC-PAN-RES");
+        break;
+      case "SC-CAP-VA":
+        CatalogosConList.value.push("SC-CAP-VA");
         break;
     }
   });

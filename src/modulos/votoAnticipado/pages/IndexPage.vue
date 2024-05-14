@@ -18,8 +18,10 @@
       </div>
     </div>
     <TablaComp />
+    <ModalCaptura />
   </q-page>
 </template>
 <script setup>
 import TablaComp from "../components/TablaComp.vue";
+import ModalCaptura from "../../captura/components/ModalComp.vue";
 </script>

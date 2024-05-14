@@ -13,6 +13,13 @@
               Resultados de la sección {{ encabezado.seccion }} de la casilla
               {{ encabezado.casilla }} de la elección a
               {{ encabezado.eleccion }}.
+              {{
+                encabezado.eleccion == "Diputaciones"
+                  ? `Municipio ${encabezado.municipio} - Distrito ${encabezado.distrito}`
+                  : encabezado.eleccion == "Regidurías"
+                  ? `Municipio ${encabezado.municipio} - ${encabezado.demarcacion}`
+                  : `Municipio ${encabezado.municipio}`
+              }}
             </div>
 
             <q-space />
@@ -112,47 +119,74 @@
         </q-card-section>
         <q-card-section class="row">
           <div class="col-lg-4 col-md-6 col-xs-6 q-pa-sm">
-            <div class="text-subtitle1 text-bold text-grey-8">
-              Candidatos no registrados
-            </div>
-            <q-input
-              class="text-h6"
-              v-model="
-                resultados.encabezado.total_Votos_Candidatos_No_Registrados
-              "
-              mask="###"
-              placeholder="0"
-              :name="`myTextTotales1`"
-              dense
-              input-class="text-right"
-              @keydown.enter.prevent="getFocus(1, 'totales')"
-            />
+            <q-card
+              style="border-radius: 8px"
+              class="my-card text-center no-box-shadow"
+            >
+              <q-card-section>
+                <div class="text-h6 text-bold text-grey-8">
+                  Candidatos no registrados
+                </div>
+              </q-card-section>
+              <q-card-section>
+                <q-input
+                  class="text-h6"
+                  v-model="
+                    resultados.encabezado.total_Votos_Candidatos_No_Registrados
+                  "
+                  mask="###"
+                  placeholder="0"
+                  :name="`myTextTotales1`"
+                  dense
+                  input-class="text-right"
+                  @keydown.enter.prevent="getFocus(1, 'totales')"
+                />
+              </q-card-section>
+            </q-card>
           </div>
           <div class="col-lg-4 col-md-6 col-xs-6 q-pa-sm">
-            <div class="text-subtitle1 text-bold text-grey-8">Votos nulos</div>
-            <q-input
-              class="text-h6"
-              v-model="resultados.encabezado.total_Votos_Nulos"
-              mask="###"
-              placeholder="0"
-              :name="`myTextTotales2`"
-              dense
-              input-class="text-right"
-              @keydown.enter.prevent="getFocus(2, 'totales')"
-            />
+            <q-card
+              style="border-radius: 8px"
+              class="my-card text-center no-box-shadow"
+            >
+              <q-card-section>
+                <div class="text-h6 text-bold text-grey-8">Votos nulos</div>
+              </q-card-section>
+              <q-card-section>
+                <q-input
+                  class="text-h6"
+                  v-model="resultados.encabezado.total_Votos_Nulos"
+                  mask="###"
+                  placeholder="0"
+                  :name="`myTextTotales2`"
+                  dense
+                  input-class="text-right"
+                  @keydown.enter.prevent="getFocus(2, 'totales')"
+                />
+              </q-card-section>
+            </q-card>
           </div>
           <div class="col-lg-4 col-md-6 col-xs-6 q-pa-sm">
-            <div class="text-subtitle1 text-bold text-grey-8">Total votos</div>
-            <q-input
-              class="text-h6"
-              v-model="resultados.encabezado.total_Votos"
-              mask="###"
-              placeholder="0"
-              :name="`myTextTotales3`"
-              dense
-              input-class="text-right"
-              @keydown.enter.prevent="getFocus(3, 'totales')"
-            />
+            <q-card
+              style="border-radius: 8px"
+              class="my-card text-center no-box-shadow"
+            >
+              <q-card-section>
+                <div class="text-h6 text-bold text-grey-8">Total votos</div>
+              </q-card-section>
+              <q-card-section>
+                <q-input
+                  class="text-h6"
+                  v-model="resultados.encabezado.total_Votos"
+                  mask="###"
+                  placeholder="0"
+                  :name="`myTextTotales3`"
+                  dense
+                  input-class="text-right"
+                  @keydown.enter.prevent="getFocus(3, 'totales')"
+                />
+              </q-card-section>
+            </q-card>
           </div>
         </q-card-section>
         <q-card-section>

@@ -35,7 +35,7 @@
         <q-td v-for="col in props.cols" :key="col.name" :props="props">
           <div v-if="col.name === 'id'">
             <q-btn
-              v-if="tipo == 'recuento'"
+              v-if="tipo == 'recuento' && modulo == null ? false : modulo.leer"
               flat
               round
               color="green"
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, watch, watchEffect, onBeforeMount } from "vue";
+import { ref, defineProps, watch, onBeforeMount } from "vue";
 import { useCapturaStore } from "src/stores/captura-store";
 import { useRerservasStore } from "src/stores/reservas-store";
 import { storeToRefs } from "pinia";
@@ -189,34 +189,6 @@ watch(props, (val) => {
   }
 });
 
-watchEffect(() => {
-  switch (props.tipo_siglas) {
-    case "DIP":
-    case "REG":
-      if (props.rp == true) {
-        if (props.tipo == "cotejo") {
-          loading.value = pendientes_cotejo_rp.value.length == 0;
-        } else {
-          loading.value = pendientes_recuento_rp.value.length == 0;
-        }
-      } else {
-        if (props.tipo == "cotejo") {
-          loading.value = pendientes_cotejo.value.length == 0;
-        } else {
-          loading.value = pendientes_recuento.value.length == 0;
-        }
-      }
-      break;
-    case "PYS":
-      if (props.tipo == "cotejo") {
-        loading.value = pendientes_cotejo.value.length == 0;
-      } else {
-        loading.value = pendientes_recuento.value.length == 0;
-      }
-      break;
-  }
-});
-
 //----------------------------------------------------------
 
 const modalCausales = async (row, valor) => {
@@ -267,6 +239,10 @@ const evalua_columnas = () => {
 //Cotejo 1
 //Recueno parcial 2
 const tipoComputoAlert = (row) => {
+  encabezado.value.rp = props.rp;
+  encabezado.value.distrito = row.distrito;
+  encabezado.value.municipio = row.municipio;
+  encabezado.value.demarcacion = row.demarcacion;
   encabezado.value.seccion = row.seccion;
   encabezado.value.casilla = row.casilla;
   encabezado.value.eleccion =
@@ -300,7 +276,7 @@ const tipoComputoAlert = (row) => {
             value == "cotejo" ? 1 : value == "recuento_Parcial" ? 2 : 3;
           resolve();
         } else {
-          resolve("Se necesita seleccionar una opción:)");
+          resolve("Es necesario seleccionar una opción.");
         }
       });
     },

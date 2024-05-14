@@ -10,7 +10,7 @@ import axios from "axios";
 // for each client)
 const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const api = axios.create({
-  //baseURL: "https://3f89-177-226-124-12.ngrok-free.app/api",
+  //baseURL: "https://7c4b-177-226-124-12.ngrok-free.app/api",
   baseURL: "http://sistema.ieenayarit.org:9370/api",
   //baseURL: "https://api.sistemas-ieenayarit.org/api",
 });
