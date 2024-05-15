@@ -11,7 +11,7 @@ import axios from "axios";
 const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const api = axios.create({
   //baseURL: "https://7c4b-177-226-124-12.ngrok-free.app/api",
-  baseURL: "http://sistema.ieenayarit.org:9370/api",
+  baseURL: "https://localhost:5472/api",
   //baseURL: "https://api.sistemas-ieenayarit.org/api",
 });
 
@@ -22,17 +22,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response.status == 401) {
-      alert("Su sesión ha expirado, sera redireccionado al logín");
-      sessionStorage.clear();
-      window.location = "https://acceso.sistemas-ieenayarit.org";
-    }
-    return Promise.reject();
-  }
-);
+// api.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response.status == 401) {
+//       alert("Su sesión ha expirado, sera redireccionado al logín");
+//       sessionStorage.clear();
+//       window.location = "https://acceso.sistemas-ieenayarit.org";
+//     }
+//     return Promise.reject();
+//   }
+// );
 
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

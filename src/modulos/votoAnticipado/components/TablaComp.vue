@@ -139,7 +139,6 @@ const inicializar = async (row) => {
     inputOptions: {
       cotejo: "Cotejo",
       recuento_Parcial: "Recuento parcial",
-      recuento_Total: "Recuento total",
     },
     inputPlaceholder: "Selecciona una opción",
     showCancelButton: true,

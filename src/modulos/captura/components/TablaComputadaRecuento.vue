@@ -285,13 +285,14 @@ const tipoComputoAlert = (row) => {
       if (tipo_Computo.value == 1) {
         resumenCotejo();
       } else {
-        recuentoAlert();
+        recuentoAlert(row);
       }
     }
   });
 };
 
 const recuentoAlert = async (row) => {
+  console.log(row);
   Swal.fire({
     title: "¿Se han reservado votos en esta casilla para esta elección?",
     icon: "warning",
