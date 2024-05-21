@@ -1,25 +1,30 @@
 <template>
   <div class="q-pt-md">
     <div v-if="consulta == true">
-      <div class="col-12 bg-white text-h6 text-center text-bold">
+      <div
+        :class="
+          $q.dark.isActive
+            ? 'col-12  text-h6 text-center text-bold'
+            : 'col-12 bg-white text-h6 text-center text-bold'
+        "
+      >
         Resultados de la elección de
         {{
           encabezado.eleccion == "DIP"
             ? "Diputaciones"
             : encabezado.eleccion == "PYS"
-            ? "Presidencias y sindicaturas"
+            ? "Presidencias y Sindicaturas"
             : "Regidurías"
         }}
-        {{ encabezado.tipo_Candidatura }}
-
+        {{ encabezado.eleccion != "PYS" ? encabezado.tipo_Candidatura : "" }}
         {{
           encabezado.eleccion == "DIP" && resultados.rp == false
-            ? `- Distrito ${encabezado.distrito}`
+            ? `-Distrito ${encabezado.distrito}`
             : encabezado.eleccion == "PYS"
             ? encabezado.municipio
-            : encabezado.eleccion == "REG"
-            ? `${encabezado.municipio} - ${encabezado.demarcacion}`
-            : ""
+            : encabezado.eleccion == "REG" && resultados.rp == false
+            ? `-${encabezado.municipio} - ${encabezado.demarcacion}`
+            : encabezado.municipio
         }}
       </div>
       <div class="row q-gutter-md q-pt-md" style="margin: 25px">
@@ -33,7 +38,13 @@
             <q-avatar style="width: auto" square>
               <img :src="partido.logo_Url" />
             </q-avatar>
-            <div class="text-grey-8 text-subtitle2 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle2 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               {{ partido.siglas }}
             </div>
           </q-card-section>
@@ -42,7 +53,7 @@
               disable
               filled
               dense
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               v-model="partido.votos"
             />
           </q-card-section>
@@ -57,7 +68,13 @@
             <q-avatar style="width: 134px; height: 32px" square>
               <img :src="partido.logo_Url" />
             </q-avatar>
-            <div class="text-grey-8 text-subtitle2 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle2 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               {{ partido.siglas }}
             </div>
           </q-card-section>
@@ -66,21 +83,27 @@
               disable
               filled
               dense
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               v-model="partido.votos"
             />
           </q-card-section>
         </q-card>
         <q-card style="width: 200px" class="my-card text-center">
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               Total no registradas
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.total_No_Registrados"
@@ -89,14 +112,20 @@
         </q-card>
         <q-card style="width: 200px" class="my-card text-center">
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               Total votos nulos
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.nulos"
@@ -105,12 +134,20 @@
         </q-card>
         <q-card style="width: 200px" class="my-card text-center">
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">Total votos</div>
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
+              Total votos
+            </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.total_Votos"
@@ -141,14 +178,20 @@
             <q-avatar style="width: auto" square>
               <img :src="partido.logo_Url" />
             </q-avatar>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle2 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               {{ partido.siglas }}
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="partido.votos"
@@ -157,14 +200,20 @@
         </q-card>
         <q-card style="width: 200px" class="my-card text-center">
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               Total no registradas
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.total_No_Registrados"
@@ -173,14 +222,20 @@
         </q-card>
         <q-card style="width: 200px" class="my-card text-center">
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               Total votos nulos
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.nulos"
@@ -189,12 +244,20 @@
         </q-card>
         <q-card style="width: 200px" class="my-card text-center">
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">Total votos</div>
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
+              Total votos
+            </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.total_Votos"
@@ -223,14 +286,20 @@
             <q-avatar style="width: 134px; height: 32px" square>
               <img :src="partido.logo_Url" />
             </q-avatar>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle2 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               {{ partido.siglas }}
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="partido.votos"
@@ -247,14 +316,20 @@
             <q-avatar style="width: auto" square>
               <img :src="partido.logo_Url" />
             </q-avatar>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle2 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               {{ partido.siglas }}
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="partido.votos"
@@ -267,14 +342,20 @@
           class="my-card text-center"
         >
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               Total no registradas
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.total_No_Registrados"
@@ -287,14 +368,20 @@
           class="my-card text-center"
         >
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
               Total votos nulos
             </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.nulos"
@@ -307,19 +394,26 @@
           class="my-card text-center"
         >
           <q-card-section>
-            <div class="text-grey-8 text-subtitle1 text-bold">Total votos</div>
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-subtitle1 text-bold'
+                  : 'text-grey-8 text-subtitle2 text-bold'
+              "
+            >
+              Total votos
+            </div>
           </q-card-section>
           <q-card-section>
             <q-input
               disable
-              input-class="text-right"
+              input-class="text-right text-bold text-subtitle1"
               filled
               dense
               v-model="resultados.total_Votos"
             />
           </q-card-section>
         </q-card>
-
         <div class="col-12 justify-end q-pr-lg">
           <div class="text-right q-gutter-xs">
             <q-btn

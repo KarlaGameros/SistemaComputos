@@ -20,6 +20,7 @@ export const useCapturaStore = defineStore("useCapturaStore", {
       eleccion: null,
     },
     resultados: {
+      boletas: null,
       encabezado: {
         grupo_Trabajo: null,
         id: null,
@@ -55,6 +56,7 @@ export const useCapturaStore = defineStore("useCapturaStore", {
   }),
   actions: {
     initResultados() {
+      this.resultados.boletas = null;
       this.resultados.encabezado.id = null;
       this.resultados.encabezado.grupo_Trabajo = null;
       this.resultados.encabezado.punto_Recuento = null;
@@ -66,6 +68,24 @@ export const useCapturaStore = defineStore("useCapturaStore", {
       this.resultados.partidos = [];
       this.resultados.coaliciones = [];
       this.resultados.independientes = [];
+    },
+
+    initCausales() {
+      this.causales.id = null;
+      this.causales.seccion = null;
+      this.causales.casilla = null;
+      this.causales.causal_1 = null;
+      this.causales.causal_2 = null;
+      this.causales.causal_3 = null;
+      this.causales.causal_4 = null;
+      this.causales.causal_5 = null;
+      this.causales.causal_6 = null;
+      this.causales.causal_7 = null;
+      this.causales.causal_8 = null;
+      this.causales.causal_9 = null;
+      this.causales.causal_10 = null;
+      this.causales.causal_11 = null;
+      this.causales.total_causales = null;
     },
 
     actualizarModalCausales(valor) {
@@ -231,8 +251,9 @@ export const useCapturaStore = defineStore("useCapturaStore", {
           `/ResultadoComputos/InicializarResultados?TipoEleccionId=${eleccion_id}&CasillaId=${casilla_id}&TipoComputo=${tipo_computo}&GrupoTrabajo=${grupo_trabajo}&PuntoRecuento=${puento_recuento}&VotosReservados=${votos_reservados}`
         );
         if (resp.status == 200) {
-          const { success, data } = resp.data;
+          const { success, data, boletas } = resp.data;
           if (success) {
+            this.resultados.boletas = boletas;
             this.resultados.encabezado.id = data.encabezado.id;
             this.resultados.encabezado.grupo_Trabajo =
               data.encabezado.grupo_Trabajo;
@@ -304,8 +325,9 @@ export const useCapturaStore = defineStore("useCapturaStore", {
           `/ResultadoComputos/InicializarResultadosRp?TipoEleccionId=${eleccion_id}&CasillaId=${casilla_id}&TipoComputo=${tipo_computo}&GrupoTrabajo=${grupo_trabajo}&PuntoRecuento=${puento_recuento}&VotosReservados=${votos_reservados}`
         );
         if (resp.status == 200) {
-          const { success, data } = resp.data;
+          const { success, data, boletas } = resp.data;
           if (success) {
+            this.resultados.boletas = boletas;
             this.resultados.encabezado.id = data.encabezado.id;
             this.resultados.encabezado.grupo_Trabajo =
               data.encabezado.grupo_Trabajo;

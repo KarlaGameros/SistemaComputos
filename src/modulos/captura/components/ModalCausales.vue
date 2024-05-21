@@ -51,7 +51,6 @@
 import { useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
 import { useCapturaStore } from "src/stores/captura-store";
-import Swal from "sweetalert2";
 
 //----------------------------------------------------------
 
@@ -62,6 +61,7 @@ const { modalCausales, list_causales } = storeToRefs(capturaStore);
 //----------------------------------------------------------
 
 const actualizarModal = (valor) => {
+  capturaStore.initCausales();
   capturaStore.actualizarModalCausales(valor);
 };
 </script>

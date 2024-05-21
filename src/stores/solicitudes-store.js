@@ -17,6 +17,7 @@ export const useSolicitudesStore = defineStore("useSolicitudesStore", {
         );
         if (resp.status == 200) {
           const { success, data } = resp.data;
+
           if (success) {
             this.list_Solicitudes_Mr = data.map((element) => {
               return {

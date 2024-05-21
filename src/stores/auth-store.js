@@ -146,6 +146,7 @@ export const useAuthStore = defineStore("auth", {
         const resp = await api.get("/Oficinas/GetUsuario");
         let { data } = resp.data;
         this.usuario_Nombre = data.nombre_Completo;
+        localStorage.setItem("oficina_Id", data.oficina_Id);
       } catch (error) {
         return {
           success: false,

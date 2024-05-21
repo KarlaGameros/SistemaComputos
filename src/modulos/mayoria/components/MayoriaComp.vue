@@ -2,7 +2,7 @@
   <div class="q-pa-lg">
     <q-banner
       inline-actions
-      class="text-justify bg-white"
+      :class="$q.dark.isActive ? 'text-justify' : 'text-justify bg-white'"
       style="border-radius: 20px"
     >
       <q-btn
@@ -65,14 +65,15 @@
             />
           </div>
           <q-btn
+            v-if="tab == 'MR'"
             :disable="
-              eleccion == 'DIP' && tab == 'MR'
+              eleccion == 'DIP'
                 ? distrito_Id == null
-                : eleccion == 'REG' && tab == 'MR'
+                : eleccion == 'REG'
                 ? municipio_Id == null || demarcacion_Id == null
                 : eleccion == 'PYS'
                 ? municipio_Id == null
-                : eleccion == 'REG' && tab == 'RP'
+                : eleccion == 'REG'
                 ? municipio_Id == null
                 : eleccion == 'DIP' && tab == 'RP'
                 ? distrito_Id != null
@@ -159,8 +160,8 @@
 import { onBeforeMount, ref, watch } from "vue";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
-import chartMayoria from "src/charts/chartMayoria.vue";
 import { useMayoriaStore } from "src/stores/mayoria-store";
+import chartMayoria from "src/charts/chartMayoria.vue";
 
 //-----------------------------------------------------------
 
@@ -179,6 +180,8 @@ const distrito_Id = ref(null);
 const municipio_Id = ref(null);
 const demarcacion_Id = ref(null);
 const tab = ref("MR");
+const loading = ref(false);
+
 //-----------------------------------------------------------
 
 onBeforeMount(() => {
@@ -204,6 +207,9 @@ watch(tab, (val) => {
   if (val != null) {
     mayoriaStore.initGrafica();
     limpiarFiltro();
+    if (val == "RP" && eleccion.value == "DIP") {
+      mayoriaStore.cosultaResultadosRP(tipo_eleccion_id.value);
+    }
   }
 });
 
@@ -216,6 +222,7 @@ watch(list_Tipo_Elecciones, (val) => {
 //-----------------------------------------------------------
 
 const generar = async () => {
+  loading.value = true;
   if (eleccion.value == "DIP") {
     if (tab.value == "MR") {
       await mayoriaStore.cosultaResultadosMr(
@@ -244,6 +251,9 @@ const generar = async () => {
       );
     }
   }
+  setTimeout(() => {
+    loading.value = false;
+  }, 3000);
 };
 
 const limpiarFiltro = () => {
@@ -269,5 +279,3 @@ const set_tipo_eleccion = (tipo) => {
   limpiarFiltro();
 };
 </script>
-
-<style></style>

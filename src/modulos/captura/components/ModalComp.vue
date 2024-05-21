@@ -21,7 +21,6 @@
                   : `Municipio ${encabezado.municipio}`
               }}
             </div>
-
             <q-space />
             <q-btn
               icon="close"
@@ -35,6 +34,14 @@
           <div class="row bg-blue-grey-3 q-pl-md text-bold text-h6">
             Total de votos sistema: {{ totalVotos }}
           </div>
+          <q-banner v-show="visible" class="bg-red">
+            <template v-slot:avatar>
+              <q-icon name="warning" color="white" />
+            </template>
+            <div class="text-white text-bold">
+              El total de votos es mayor al número de boletas entregadas
+            </div>
+          </q-banner>
         </div>
         <q-card-section v-if="resultados.partidos.length > 0">
           <div
@@ -52,7 +59,7 @@
             >
               <q-card-section>
                 <q-avatar style="width: auto" square>
-                  <img :src="partido.logo_Url" />
+                  <img :src="partido.logo_Url" :alt="partido.partido" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-ma-sm">
                   {{ partido.partido }}
@@ -90,7 +97,7 @@
             >
               <q-card-section>
                 <q-avatar square style="width: auto">
-                  <img :src="coalicion.logo_Url" />
+                  <img :src="coalicion.logo_Url" :alt="coalicion.combinacion" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-pa-sm">
                   {{ coalicion.combinacion }}
@@ -194,15 +201,18 @@
           <div class="col-12 justify-end">
             <div class="text-right q-gutter-xs">
               <q-btn
+                icon-right="cancel"
                 label="Cancelar"
                 color="red"
                 @click="actualizarModal(false)"
               />
               <q-btn
+                v-if="modulo == null ? false : modulo.registrar"
                 label="Guardar"
-                @click="onSubmit"
+                type="submit"
                 color="secondary"
                 class="q-ml-sm"
+                icon-right="check_circle"
               />
             </div>
           </div>
@@ -213,34 +223,56 @@
 </template>
 
 <script setup>
-import { useQuasar } from "quasar";
+import { useQuasar, QSpinnerCube } from "quasar";
 import { storeToRefs } from "pinia";
 import { useCapturaStore } from "src/stores/captura-store";
-import { computed, defineProps, watch } from "vue";
+import { computed, defineProps, onBeforeMount, ref, watchEffect } from "vue";
+import { useAuthStore } from "src/stores/auth-store";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
 
 const $q = useQuasar();
 const capturaStore = useCapturaStore();
+const authStore = useAuthStore();
+const { modulo } = storeToRefs(authStore);
 const { modal, resultados, encabezado } = storeToRefs(capturaStore);
 const props = defineProps({
   rp: { type: Boolean, required: true },
   tipo_id: { type: Number, required: true },
   tipo_siglas: { type: String, required: true },
 });
+const visible = ref(false);
+const siglas = "SC-CAP-RES";
 
 //----------------------------------------------------------
+
+onBeforeMount(() => {
+  leerPermisos();
+});
+
+//----------------------------------------------------------
+
+const leerPermisos = async () => {
+  $q.loading.show();
+  await authStore.loadModulo(siglas);
+  $q.loading.hide();
+};
 
 const totalVotos = computed(() => {
   let total = 0;
   for (let partido of resultados.value.partidos) {
     total += parseInt(partido.votos);
+    if (partido.votos == "" || partido.votos == NaN) {
+      partido.votos = 0;
+    }
   }
   for (let coalicion of resultados.value.coaliciones) {
     total += parseInt(coalicion.votos);
+    if (coalicion.votos == "" || partido.votos == NaN) {
+      coalicion.votos = 0;
+    }
   }
-
   if (
     resultados.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
   ) {
@@ -248,12 +280,21 @@ const totalVotos = computed(() => {
       resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
     );
   }
-
   if (resultados.value.encabezado.total_Votos_Nulos !== "") {
     total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
   }
-
   return total;
+});
+
+watchEffect(() => {
+  if (
+    totalVotos.value > resultados.value.boletas ||
+    resultados.value.encabezado.total_Votos > resultados.value.boletas
+  ) {
+    visible.value = true;
+  } else {
+    visible.value = false;
+  }
 });
 
 const actualizarModal = (valor) => {
@@ -306,20 +347,52 @@ const onSubmit = async () => {
   let resp = null;
   $q.dialog({
     title: "¿Esta seguro de enviar los resultados?",
-    message: "Será afectada la base de datos.",
+    message:
+      props.tipo_siglas == "DIP"
+        ? `<ul>
+      <li>Elección: ${encabezado.value.eleccion}</li>
+      <li>Municipio: ${encabezado.value.municipio}</li>
+      <li>Distrito: ${encabezado.value.distrito}</li>
+      <li>Sección: ${encabezado.value.seccion}</li>
+      <li>Casilla: ${encabezado.value.casilla}</li>
+      </ul>`
+        : props.tipo_siglas == "PYS"
+        ? `<ul>
+      <li>Elección: ${encabezado.value.eleccion}</li>
+      <li>Municipio: ${encabezado.value.municipio}</li>
+      <li>Sección: ${encabezado.value.seccion}</li>
+      <li>Casilla: ${encabezado.value.casilla}</li>
+      </ul>`
+        : `<ul>
+      <li>Elección: ${encabezado.value.eleccion}</li>
+      <li>Municipio: ${encabezado.value.municipio}</li>
+      <li>Demarcación: ${encabezado.value.demarcacion}</li>
+      <li>Sección: ${encabezado.value.seccion}</li>
+      </ul>`,
     icon: "Warning",
+    html: true,
     persistent: true,
     transitionShow: "scale",
     transitionHide: "scale",
-    ok: {
-      color: "positive",
-      label: "Sí, enviar!",
-    },
     cancel: {
-      color: "negative",
+      iconRight: "cancel",
+      color: "red",
       label: " No, Cancelar!",
     },
+    ok: {
+      color: "secondary",
+      label: "Sí, enviar!",
+      iconRight: "check_circle",
+    },
   }).onOk(async () => {
+    $q.loading.show({
+      spinner: QSpinnerCube,
+      spinnerColor: "pink",
+      spinnerSize: 140,
+      backgroundColor: "purple-2",
+      message: "Espere un momento por favor...",
+      messageColor: "black",
+    });
     let total = 0;
     for (let partido of resultados.value.partidos) {
       total += parseInt(partido.votos);
@@ -327,7 +400,6 @@ const onSubmit = async () => {
     for (let coalicion of resultados.value.coaliciones) {
       total += parseInt(coalicion.votos);
     }
-
     total += parseInt(
       resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
         ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
@@ -338,34 +410,34 @@ const onSubmit = async () => {
         ? resultados.value.encabezado.total_Votos_Nulos
         : 0
     );
-
     resultados.value.encabezado.total_Sistema = parseInt(total);
     resultados.value.encabezado.total_Votos = parseInt(
       resultados.value.encabezado.total_Votos
     );
-    $q.loading.show();
     if (props.rp == true) {
       resp = await capturaStore.registrarResultadosRp(resultados.value);
     } else {
       resp = await capturaStore.registrarResultados(resultados.value);
     }
-
     if (resp.success) {
-      $q.notify({
-        position: "top-right",
-        type: "positive",
-        message: resp.data,
+      $q.loading.hide();
+      Swal.fire({
+        icon: "success",
+        title: resp.data,
+        showConfirmButton: false,
+        timer: 1500,
       });
       reload();
+      capturaStore.initResultados();
       actualizarModal(false);
     } else {
+      $q.loading.hide();
       $q.notify({
         position: "top-right",
         type: "negative",
         message: resp.data,
       });
     }
-    $q.loading.hide();
   });
 };
 </script>

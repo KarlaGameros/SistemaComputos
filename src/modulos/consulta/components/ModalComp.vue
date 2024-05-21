@@ -136,13 +136,23 @@ onBeforeMount(() => {
 
 watch(tipo_Eleccion, (val) => {
   if (val != null) {
-    distrito_Id.value = null;
-    municipio_Id.value = null;
-    demarcacion_Id.value = null;
+    limpiar();
+  }
+});
+
+watch(tipo_Candidatura, (val) => {
+  if (val != null) {
+    limpiar();
   }
 });
 
 //-----------------------------------------------------------
+
+const limpiar = () => {
+  distrito_Id.value = null;
+  municipio_Id.value = null;
+  demarcacion_Id.value = null;
+};
 
 const cargarData = async () => {
   $q.loading.show({

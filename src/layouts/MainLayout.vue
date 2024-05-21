@@ -1,6 +1,9 @@
 <template>
-  <q-layout view="lHh LpR lFf" class="bg-blue-grey-1">
-    <q-header elevated class="bg-pink-ieen">
+  <q-layout
+    view="lHh LpR lFf"
+    :class="!$q.dark.isActive ? 'bg-blue-grey-1' : ''"
+  >
+    <q-header class="bg-pink-ieen">
       <q-toolbar>
         <q-btn
           flat
@@ -11,6 +14,13 @@
           @click="toggleLeftDrawer"
         />
         <q-toolbar-title> Cómputos </q-toolbar-title>
+        <q-btn
+          flat
+          round
+          dense
+          :icon="!modo ? 'dark_mode' : 'light_mode'"
+          @click="modoOscuro(!modo)"
+        />
         <q-btn flat round dense icon="apps" @click="show" />
       </q-toolbar>
     </q-header>
@@ -19,13 +29,20 @@
         <div class="text-center">
           <q-img src="../assets/Computos.png" />
         </div>
-        <div class="text-weight-bold text-grey-8 q-pa-md">
+        <div
+          :class="
+            $q.dark.isActive
+              ? 'text-white text-weight-bold q-pa-md'
+              : 'text-weight-bold text-grey-8 q-pa-md'
+          "
+        >
           Bienvenido(a) <br />{{ usuario_Nombre }}
         </div>
+
         <q-item
           clickable
           v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'inicio' }"
           active-class="text-pink-ieen-1"
         >
@@ -35,10 +52,23 @@
           <q-item-section> Inicio </q-item-section>
         </q-item>
         <q-item
+          v-if="CatalogosConList.some((element) => element == 'SC-CAP-VA')"
+          clickable
+          v-ripple
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
+          :to="{ name: 'votoAnticipado' }"
+          active-class="text-pink-ieen-1"
+        >
+          <q-item-section avatar>
+            <q-icon name="how_to_vote" />
+          </q-item-section>
+          <q-item-section> Voto anticipado </q-item-section>
+        </q-item>
+        <q-item
           v-if="CatalogosConList.some((element) => element == 'SC-CAP-RES')"
           clickable
           v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'captura' }"
           active-class="text-pink-ieen-1"
         >
@@ -51,7 +81,7 @@
           v-if="CatalogosConList.some((element) => element == 'SC-REG-RES')"
           clickable
           v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'reservas' }"
           active-class="text-pink-ieen-1"
         >
@@ -64,7 +94,7 @@
           v-if="CatalogosConList.some((element) => element == 'SC-CON-RES')"
           clickable
           v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'consulta' }"
           active-class="text-pink-ieen-1"
         >
@@ -77,7 +107,7 @@
           v-if="CatalogosConList.some((element) => element == 'SC-REG-CAS')"
           clickable
           v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'porCasilla' }"
           active-class="text-pink-ieen-1"
         >
@@ -87,22 +117,10 @@
           <q-item-section> Por casilla </q-item-section>
         </q-item>
         <q-item
+          v-if="CatalogosConList.some((element) => element == 'SC-MAY-RES')"
           clickable
           v-ripple
-          class="text-grey-8"
-          :to="{ name: 'votoAnticipado' }"
-          active-class="text-pink-ieen-1"
-        >
-          <q-item-section avatar>
-            <q-icon name="how_to_vote" />
-          </q-item-section>
-          <q-item-section> Voto anticipado </q-item-section>
-        </q-item>
-        <!-- v-if="CatalogosConList.some((element) => element == 'SC-MAY-RES')" -->
-        <q-item
-          clickable
-          v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'mayoria' }"
           active-class="text-pink-ieen-1"
         >
@@ -115,7 +133,7 @@
           v-if="CatalogosConList.some((element) => element == 'SC-REG-SOL')"
           clickable
           v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'solicitudes' }"
           active-class="text-pink-ieen-1"
         >
@@ -128,7 +146,7 @@
           v-if="CatalogosConList.some((element) => element == 'SC-PAN-RES')"
           clickable
           v-ripple
-          class="text-grey-8"
+          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
           :to="{ name: 'panel' }"
           active-class="text-pink-ieen-1"
         >
@@ -142,7 +160,7 @@
     <q-page-container>
       <router-view />
     </q-page-container>
-    <q-footer elevated class="bg-pink-ieen text-white">
+    <q-footer class="bg-pink-ieen text-white">
       <q-toolbar>
         <q-toolbar-title>
           <div>&#169; Unidad Técnica de Informatica y Estadística</div>
@@ -171,6 +189,7 @@ const usuario = ref("");
 const userName = ref("");
 const { modulos, sistemas, apps, usuario_Nombre } = storeToRefs(authStore);
 const CatalogosConList = ref([]);
+const modo = ref(false);
 
 //----------------------------------------------------------
 
@@ -210,6 +229,11 @@ onBeforeMount(async () => {
 
 //----------------------------------------------------------
 
+const modoOscuro = (valor) => {
+  modo.value = valor;
+  $q.dark.set(modo.value);
+};
+
 const show = () => {
   $q.bottomSheet({
     message: "Aplicaciones",
@@ -242,6 +266,8 @@ const loadMenu = async () => {
   await authStore.loadModulos();
   await authStore.loadPerfil();
   await authStore.loadUsuario();
+  console.log("key", encryptStorage.decrypt("key"));
+  console.log("modulos", modulos.value);
   modulos.value.forEach((element) => {
     switch (element.siglas_Modulo) {
       case "SC-CAP-RES":
@@ -264,6 +290,9 @@ const loadMenu = async () => {
         break;
       case "SC-PAN-RES":
         CatalogosConList.value.push("SC-PAN-RES");
+        break;
+      case "SC-CAP-VA":
+        CatalogosConList.value.push("SC-CAP-VA");
         break;
       case "SC-CAP-VA":
         CatalogosConList.value.push("SC-CAP-VA");

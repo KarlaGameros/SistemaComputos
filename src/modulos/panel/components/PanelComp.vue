@@ -1,10 +1,24 @@
 <template>
   <q-page class="q-pa-sm">
-    <div class="row bg-white q-ma-sm q-pa-md text-h6 text-grey-8">
+    <div
+      :style="$q.dark.isActive ? 'border: solid' : ''"
+      :class="
+        $q.dark.isActive
+          ? 'row q-ma-sm q-pa-md text-h6'
+          : 'row bg-white q-ma-sm q-pa-md text-h6 text-grey-8'
+      "
+    >
       Avance Estatal
     </div>
-    <div class="bg-white q-ma-sm q-pa-md">
-      <div class="text-subtitle1 text-grey-8">
+    <div
+      :style="$q.dark.isActive ? 'border: solid' : ''"
+      :class="$q.dark.isActive ? 'q-ma-sm q-pa-md' : 'bg-white q-ma-sm q-pa-md'"
+    >
+      <div
+        :class="
+          $q.dark.isActive ? 'text-subtitle1  ' : 'text-subtitle1 text-grey-8'
+        "
+      >
         Descarga las bases de datos de los diferentes tipos de elecciones.
       </div>
       <q-btn
@@ -50,11 +64,16 @@
         </q-card-section>
       </q-card>
     </div>
-    <div class="col-12 bg-white q-ma-sm">
+    <div
+      :class="$q.dark.isActive ? 'col-12 q-ma-sm' : 'col-12 bg-white q-ma-sm'"
+    >
       <chartEstadisticaEstatal />
     </div>
-    <div class="bg-white q-ma-sm q-pa-md">
-      <div class="text-h6 text-grey-8">
+    <div
+      :style="$q.dark.isActive ? 'border: solid' : ''"
+      :class="$q.dark.isActive ? 'q-ma-sm q-pa-md' : 'bg-white q-ma-sm q-pa-md'"
+    >
+      <div :class="$q.dark.isActive ? 'text-h6' : 'text-h6 text-grey-8'">
         Actas esperadas vs Actas capturadas por tipo de elección Estatal
       </div>
     </div>
@@ -74,10 +93,16 @@
       <div v-for="item in list_Municipios" :key="item" class="col-6">
         <q-card flat class="my-card q-ma-sm">
           <q-card-section>
-            <div class="text-left text-h6 text-grey-8">
+            <div
+              :class="
+                $q.dark.isActive
+                  ? 'text-left text-h6'
+                  : 'text-left text-h6 text-grey-8'
+              "
+            >
               {{ item.label }}
             </div>
-            <charMunicipioCE />
+            <charMunicipioCE :municipio="item.label" />
           </q-card-section>
         </q-card>
       </div>
@@ -93,19 +118,11 @@ import chartCapturadaEsperadas from "src/charts/chartCapturadaEsperadas.vue";
 import chartEstadisticaEstatal from "src/charts/chartEstadisticaEstatal.vue";
 import charMunicipioCE from "src/charts/chartMunicipioCE.vue";
 
+//----------------------------------------------------------
+
 const configuracionStore = useConfiguracionStore();
 const { list_Tipo_Elecciones, list_Municipios } =
   storeToRefs(configuracionStore);
-
-onBeforeMount(() => {
-  cargarData();
-});
-
-const cargarData = async () => {
-  await configuracionStore.loadMunicipios();
-  await configuracionStore.loadTipoElecciones();
-};
-
 const items = ref([
   { siglas: "DIP MR", eleccion: "Diputaciones MR", progreso: 30 },
   { siglas: "DIP RP", eleccion: "Diputaciones RP", progreso: 10 },
@@ -113,6 +130,17 @@ const items = ref([
   { siglas: "REG MR", eleccion: "Regidurías MR", progreso: 100 },
   { siglas: "REG RP", eleccion: "Regidurías RP", progreso: 35 },
 ]);
-</script>
 
-<style></style>
+//----------------------------------------------------------
+
+onBeforeMount(() => {
+  cargarData();
+});
+
+//----------------------------------------------------------
+
+const cargarData = async () => {
+  await configuracionStore.loadMunicipios();
+  await configuracionStore.loadTipoElecciones();
+};
+</script>

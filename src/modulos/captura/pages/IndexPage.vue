@@ -1,6 +1,6 @@
 <template>
   <q-page>
-    <div class="row bg-white">
+    <div :class="$q.dark.isActive ? 'row' : 'row bg-white'">
       <div class="col">
         <div class="q-pa-md q-gutter-sm">
           <div class="text-blue-grey-5 text-h6">Captura de resultados</div>

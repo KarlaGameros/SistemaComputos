@@ -3,9 +3,20 @@ import { api } from "src/boot/axios";
 
 export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
   state: () => ({
+    modal: false,
     loading: false,
+    visualizar: false,
+    reload: false,
     list_va_eleccion: [],
+    list_va_resultados_eleccion: [],
+    encabezado: {
+      distrito: null,
+      municipio: null,
+      demarcacion: null,
+      eleccion: null,
+    },
     resultados: {
+      boletas: null,
       encabezado: {
         grupo_Trabajo: null,
         id: null,
@@ -15,14 +26,77 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
         total_Votos_Candidatos_No_Registrados: null,
         total_Votos_Nulos: null,
         votos_Reservados: null,
+        voto_Anticipado_Id: null,
       },
       partidos: [],
       coaliciones: [],
-      independientes: [],
       voto_Anticipado_Id: null,
     },
   }),
   actions: {
+    actualizarTabla(valor) {
+      this.reload = valor;
+    },
+    actualizarModal(valor) {
+      this.modal = valor;
+    },
+    actualizarVisualizar(valor) {
+      this.visualizar = valor;
+    },
+
+    initResultado() {
+      this.resultados.boletas = null;
+      this.resultados.encabezado.id = null;
+      this.resultados.encabezado.grupo_Trabajo = null;
+      this.resultados.encabezado.punto_Recuento = null;
+      this.resultados.encabezado.total_Sistema = null;
+      this.resultados.encabezado.total_Votos = null;
+      this.resultados.encabezado.total_Votos_Candidatos_No_Registrados = null;
+      this.resultados.encabezado.total_Votos_Nulos = null;
+      this.resultados.encabezado.votos_Reservados = null;
+      this.resultados.encabezado.voto_Anticipado_Id = null;
+      this.resultados.partidos = [];
+      this.resultados.coaliciones = [];
+      this.resultados.voto_Anticipado_Id = null;
+    },
+
+    //--------------------------------------------------------------
+    async cosultaResultados(id, boletas) {
+      try {
+        let resp = null;
+        resp = await api.get(`/ResultadoComputosVa/ByResultado/${id}`);
+        if (resp.status == 200) {
+          const { success, data } = resp.data;
+          if (success) {
+            this.resultados.boletas = boletas;
+            this.resultados.encabezado.id = data.encabezado.id;
+            this.resultados.encabezado.voto_Anticipado_Id =
+              data.encabezado.voto_Anticipado_Id;
+            this.resultados.encabezado.total_Votos_Nulos =
+              data.encabezado.total_Votos_Nulos;
+            this.resultados.encabezado.total_Votos_Candidatos_No_Registrados =
+              data.encabezado.total_Votos_Candidatos_No_Registrados;
+            this.resultados.encabezado.total_Votos =
+              data.encabezado.total_Votos.toLocaleString("en-US");
+            this.resultados.encabezado.total_Sistema =
+              data.encabezado.total_Sistema.toLocaleString("en-US");
+            this.resultados.encabezado.grupo_Trabajo =
+              data.encabezado.grupo_Trabajo;
+            this.resultados.encabezado.punto_Recuento =
+              data.encabezado.punto_Recuento;
+            this.resultados.encabezado.votos_Reservados =
+              data.encabezado.votos_Reservados;
+            this.resultados.partidos = data.partidos;
+            this.resultados.coaliciones = data.coaliciones;
+          }
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
     //--------------------------------------------------------------
     async load_va_by_eleccion(tipo_eleccion_id) {
       try {
@@ -65,6 +139,45 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
     },
 
     //--------------------------------------------------------------
+    async load_va_resultados_by_eleccion(tipo_eleccion_id) {
+      try {
+        this.list_va_resultados_eleccion = [];
+        this.loading = true;
+        const resp = await api.get(
+          `/ResultadoComputosVa/ResultadosByTipoEleccion/${tipo_eleccion_id}`
+        );
+        if (resp.status == 200) {
+          const { success, data } = resp.data;
+          if (success) {
+            this.list_va_resultados_eleccion = data.map((voto) => {
+              return {
+                id: voto.id,
+                usuario: voto.usuario,
+                municipio: voto.municipio,
+                seccion: voto.seccion,
+                casilla: voto.casilla,
+                tipo: voto.tipo,
+                total_Sistema: voto.total_Sistema,
+                total_Capturado: voto.total_Capturado,
+                distrito: voto.distrito,
+                demarcacion: voto.demarcacion,
+                boletas: voto.boletas,
+              };
+            });
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    //--------------------------------------------------------------
     async incicializar_resultados(
       Voto_Anticipado_Id,
       Tipo_Computo,
@@ -79,7 +192,7 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
         if (resp.status == 200) {
           const { success, data } = resp.data;
           if (success) {
-            this.resultados.voto_Anticipado_Id = data.voto_Anticipado_Id;
+            this.resultados.voto_Anticipado_Id = Voto_Anticipado_Id;
             this.resultados.encabezado.id = data.encabezado.id;
             this.resultados.encabezado.grupo_Trabajo =
               data.encabezado.grupo_Trabajo;
@@ -131,6 +244,34 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
               });
             }
           }
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    //--------------------------------------------------------------
+    async createResultadosVA(resultado) {
+      try {
+        const resp = await api.post(
+          "/ResultadoComputosVa/RegistrarResultados",
+          resultado
+        );
+        if (resp.status == 200) {
+          const { success, data } = resp.data;
+          if (success === true) {
+            return { success, data };
+          } else {
+            return { success, data };
+          }
+        } else {
+          return {
+            success: false,
+            data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+          };
         }
       } catch (error) {
         return {

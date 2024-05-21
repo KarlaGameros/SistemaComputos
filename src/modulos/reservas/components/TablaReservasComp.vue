@@ -421,7 +421,14 @@ const quitarReserva = async (id) => {
     cancelButtonText: "Cancelar",
   }).then(async (result) => {
     if (result.isConfirmed) {
-      $q.loading.show();
+      $q.loading.show({
+        spinner: QSpinnerCube,
+        spinnerColor: "pink",
+        spinnerSize: 140,
+        backgroundColor: "purple-2",
+        message: "Espere un momento porfavor...",
+        messageColor: "black",
+      });
       let resp = null;
       if (props.rp == true) {
         resp = await reservasStore.quitarReservaRp(id);
@@ -430,10 +437,11 @@ const quitarReserva = async (id) => {
       }
       if (resp.success) {
         $q.loading.hide();
-        $q.notify({
-          position: "top-right",
-          type: "positive",
-          message: resp.data,
+        Swal.fire({
+          icon: "success",
+          title: resp.data,
+          showConfirmButton: false,
+          timer: 1500,
         });
         await reservasStore.load_reservas_mr(props.tipo_id);
         await reservasStore.load_reservas_rp(props.tipo_id);

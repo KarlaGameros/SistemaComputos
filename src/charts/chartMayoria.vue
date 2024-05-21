@@ -16,12 +16,15 @@ import { storeToRefs } from "pinia";
 import { watch, ref } from "vue";
 import { useMayoriaStore } from "../stores/mayoria-store";
 
+//----------------------------------------------------------
+
 const mayoriaStore = useMayoriaStore();
 const { datos_grafica } = storeToRefs(mayoriaStore);
-
 const series = ref([]);
 const chartOptions = ref(null);
 const colors = ref([]);
+
+//----------------------------------------------------------
 
 watch(datos_grafica.value, (val) => {
   if (val != null) {
@@ -29,6 +32,8 @@ watch(datos_grafica.value, (val) => {
     rellenarGrafica(val);
   }
 });
+
+//----------------------------------------------------------
 
 const rellenarGrafica = () => {
   let categorias = [];
@@ -46,10 +51,38 @@ const rellenarGrafica = () => {
     chart: {
       height: 350,
       type: "bar",
-      events: {
-        click: function (chart, w, e) {
-          // console.log(chart, w, e)
+      toolbar: {
+        show: true,
+        offsetX: 0,
+        offsetY: 0,
+        tools: {
+          download: true,
+          selection: true,
+          zoom: true,
+          zoomin: true,
+          zoomout: true,
+          pan: true,
+          reset: true | '<img src="/static/icons/reset.png" width="20">',
+          customIcons: [],
         },
+        export: {
+          csv: {
+            filename: "Mayoría",
+            columnDelimiter: ",",
+            headerCategory: "Actor político",
+            headerValue: "Cantidad",
+            dateFormatter(timestamp) {
+              return new Date(timestamp).toDateString();
+            },
+          },
+          svg: {
+            filename: "Mayoría",
+          },
+          png: {
+            filename: "Mayoría",
+          },
+        },
+        autoSelected: "zoom",
       },
     },
     colors: colors.value,
@@ -79,5 +112,3 @@ const rellenarGrafica = () => {
 
 rellenarGrafica();
 </script>
-
-<style></style>

@@ -10,8 +10,13 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, defineProps } from "vue";
 
+//----------------------------------------------------------
+
+const props = defineProps({
+  municipio: { type: String, required: true },
+});
 const items = ref(["DIP MR", "DIP RP", "PYS", "REG MR", "REG RP"]);
 const series = [
   {
@@ -28,6 +33,37 @@ const options = {
   chart: {
     type: "bar",
     height: 350,
+    toolbar: {
+      show: true,
+      offsetX: 0,
+      offsetY: 0,
+      tools: {
+        download: true,
+        selection: true,
+        zoom: true,
+        zoomin: true,
+        zoomout: true,
+        pan: true,
+        reset: true | '<img src="/static/icons/reset.png" width="20">',
+        customIcons: [],
+      },
+      export: {
+        csv: {
+          filename: props.municipio,
+          columnDelimiter: ",",
+          dateFormatter(timestamp) {
+            return new Date(timestamp).toDateString();
+          },
+        },
+        svg: {
+          filename: props.municipio,
+        },
+        png: {
+          filename: props.municipio,
+        },
+      },
+      autoSelected: "zoom",
+    },
   },
   colors: ["#D0D6D5", "#76A5CF"],
   plotOptions: {
@@ -64,5 +100,3 @@ const options = {
   },
 };
 </script>
-
-<style></style>

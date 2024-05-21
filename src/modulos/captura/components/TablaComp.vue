@@ -9,8 +9,8 @@
   <template v-else>
     <div class="q-pa-lg">
       <q-banner
+        :class="$q.dark.isActive ? 'text-justify' : 'bg-white'"
         inline-actions
-        class="text-justify bg-white"
         style="border-radius: 20px"
       >
         <q-btn
@@ -45,20 +45,6 @@
           <q-tab-panels v-model="tab" animated>
             <q-tab-panel name="MR">
               <div class="text-h6 text-grey-8">
-                Listado de casillas sugeridas a recuento
-              </div>
-              <br />
-              <div>
-                <TablaComputadaRecuento
-                  :tipo="'recuento'"
-                  :rp="false"
-                  :tipo_id="tipo_eleccion_id"
-                  :tipo_siglas="eleccion"
-                />
-              </div>
-              <br />
-              <q-separator /><br />
-              <div class="text-h6 text-grey-8">
                 Listado de casillas sugeridas a cotejo
                 <q-icon name="help" color="green">
                   <q-tooltip>No cuenta con causales para recuento</q-tooltip>
@@ -73,9 +59,35 @@
                   :tipo_siglas="eleccion"
                 />
               </div>
+              <q-separator /><br />
+              <div class="text-h6 text-grey-8">
+                Listado de casillas sugeridas a recuento
+              </div>
+              <br />
+              <div>
+                <TablaComputadaRecuento
+                  :tipo="'recuento'"
+                  :rp="false"
+                  :tipo_id="tipo_eleccion_id"
+                  :tipo_siglas="eleccion"
+                />
+              </div>
+              <br />
             </q-tab-panel>
-
             <q-tab-panel name="RP">
+              <div class="text-h6 text-grey-8">
+                Listado de casillas sugeridas a cotejo
+              </div>
+              <br />
+              <div>
+                <TablaComputadaRecuento
+                  :tipo="'cotejo'"
+                  :rp="true"
+                  :tipo_id="tipo_eleccion_id"
+                  :tipo_siglas="eleccion"
+                />
+              </div>
+              <q-separator /><br />
               <div class="text-h6 text-grey-8">
                 Listado de casillas sugeridas a recuento
               </div>
@@ -89,19 +101,6 @@
                 />
               </div>
               <br />
-              <q-separator /><br />
-              <div class="text-h6 text-grey-8">
-                Listado de casillas sugeridas a cotejo
-              </div>
-              <br />
-              <div>
-                <TablaComputadaRecuento
-                  :tipo="'cotejo'"
-                  :rp="true"
-                  :tipo_id="tipo_eleccion_id"
-                  :tipo_siglas="eleccion"
-                />
-              </div>
             </q-tab-panel>
           </q-tab-panels>
         </q-card>
@@ -117,7 +116,7 @@ import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { useCapturaStore } from "src/stores/captura-store";
 import { storeToRefs } from "pinia";
 import TablaComputadaRecuento from "./TablaComputadaRecuento.vue";
-
+import Swal from "sweetalert2";
 //----------------------------------------------------------
 
 const $q = useQuasar();
@@ -143,15 +142,12 @@ const cargarData = async () => {
   await configuracionStore.loadPartidosPoliticos();
   await configuracionStore.loadCoaliciones();
   tipo_eleccion_id.value = list_Tipo_Elecciones.value[0].id;
-
   setTimeout(() => {
     capturaStore.load_cotejo(tipo_eleccion_id.value);
     capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
-
     capturaStore.load_recuento(tipo_eleccion_id.value);
     capturaStore.load_recuento_rp(tipo_eleccion_id.value);
   }, 300);
-
   loading.value = false;
 };
 
@@ -159,13 +155,11 @@ const set_tipo_eleccion = (tipo) => {
   tab.value = "MR";
   eleccion.value = tipo.siglas;
   tipo_eleccion_id.value = tipo.id;
-
   switch (eleccion.value) {
     case "DIP":
     case "REG":
       capturaStore.load_cotejo(tipo_eleccion_id.value);
       capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
-
       capturaStore.load_recuento(tipo_eleccion_id.value);
       capturaStore.load_recuento_rp(tipo_eleccion_id.value);
       break;
@@ -176,5 +170,3 @@ const set_tipo_eleccion = (tipo) => {
   }
 };
 </script>
-
-<style></style>

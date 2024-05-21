@@ -4,6 +4,8 @@ import { api } from "src/boot/axios";
 export const useConsultaStore = defineStore("useConsultaStore", {
   state: () => ({
     modal: false,
+    modalPartidos: false,
+    modalCambiarRep: false,
     modalIntegracion: false,
     consulta: false,
     encabezado: {
@@ -12,6 +14,13 @@ export const useConsultaStore = defineStore("useConsultaStore", {
       distrito: null,
       municipio: null,
       demarcacion: null,
+    },
+    representacion: {
+      oficina_Id: null,
+      nombre_Completo: null,
+      puesto: null,
+      sexo: null,
+      partido_Id: null,
     },
     resultados: {
       rp: false,
@@ -43,8 +52,24 @@ export const useConsultaStore = defineStore("useConsultaStore", {
       this.modal = valor;
     },
 
+    actualizarModalPartidos(valor) {
+      this.modalPartidos = valor;
+    },
+
     actualizarModalIntegracion(valor) {
       this.modalIntegracion = valor;
+    },
+
+    actualizarModalCambiar(valor) {
+      this.modalCambiarRep = valor;
+    },
+
+    initRepresentacion() {
+      this.representacion.oficina_Id = null;
+      this.representacion.nombre_Completo = null;
+      this.representacion.puesto = null;
+      this.representacion.sexo = null;
+      this.representacion.partido_Id = null;
     },
 
     initConsultaResultados() {
@@ -65,6 +90,34 @@ export const useConsultaStore = defineStore("useConsultaStore", {
       this.resultados.grupos_Trabajo = 0;
       this.resultados.grupos_Trabajo = 0;
       this.resultados.grupos_Trabajo = 0;
+    },
+
+    //-----------------------------------------------------------
+    async createNuevoRepresentante(representacion) {
+      try {
+        const resp = await api.post(
+          `/IntegracionesOficinas/Cambiar_Representante?OficinaId=${representacion.oficina_Id}`,
+          representacion
+        );
+        if (resp.status == 200) {
+          const { success, data } = resp.data;
+          if (success === true) {
+            return { success, data };
+          } else {
+            return { success, data };
+          }
+        } else {
+          return {
+            success: false,
+            data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+          };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
     },
 
     //-----------------------------------------------------------
@@ -168,6 +221,7 @@ export const useConsultaStore = defineStore("useConsultaStore", {
     //----------------------------------------------------------------------
     async loadIntegracionPartidosPoliticos() {
       try {
+        this.list_Integracion_Partidos = [];
         let resp = await api.get(
           "/IntegracionesOficinas/RepresentantesPartidosByOficina"
         );
@@ -175,7 +229,9 @@ export const useConsultaStore = defineStore("useConsultaStore", {
         this.list_Integracion_Partidos = data.map((element) => {
           return {
             id: element.id,
+            id_Propietario: element.id_Propietario,
             oficina_Id: element.oficina_Id,
+            oficina: element.oficina,
             nombre_Completo: element.nombre_Completo,
             puesto: element.puesto,
             sexo: element.sexo,
@@ -184,7 +240,18 @@ export const useConsultaStore = defineStore("useConsultaStore", {
             partido: element.partido,
             logo_Partido: element.logo_Partido,
             activo: element.activo,
-            presente: false,
+            presente_Propietario: false,
+            presente_Suplente: false,
+            nombre_Completo_Propietario: element.nombre_Completo_Propietario,
+            puesto_Propietario: element.puesto_Propietario,
+            sexo_Propietario: element.sexo_Propietario,
+            id_Suplente: element.id_Suplente,
+            nombre_Completo_Suplente: element.nombre_Completo_Suplente,
+            puesto_Suplente: element.puesto_Suplente,
+            sexo_Suplente: element.sexo_Suplente,
+            orden: element.orden,
+            partido_Nombre: element.partido_Nombre,
+            partido_Siglas: element.partido_Siglas,
           };
         });
       } catch (error) {
@@ -198,19 +265,18 @@ export const useConsultaStore = defineStore("useConsultaStore", {
     //----------------------------------------------------------------------
     async loadIntegracionConsejerias() {
       try {
+        this.list_Integracion_Consejerias = [];
         let resp = await api.get("/IntegracionesOficinas/ConsejeriasByOficina");
         let { data } = resp.data;
         this.list_Integracion_Consejerias = data.map((element) => {
           return {
             id: element.id,
             oficina_Id: element.oficina_Id,
+            oficina: element.oficina,
             nombre_Completo: element.nombre_Completo,
             puesto: element.puesto,
             sexo: element.sexo,
             orden: element.orden,
-            partido_Id: element.partido_Id,
-            partido: element.partido,
-            logo_Partido: element.logo_Partido,
             activo: element.activo,
             presente: false,
           };

@@ -1,6 +1,6 @@
 <template>
   <q-page>
-    <div class="row bg-white">
+    <div :class="$q.dark.isActive ? 'row' : 'row bg-white'">
       <div class="col">
         <div class="q-pa-md q-gutter-sm">
           <div class="text-blue-grey-5 text-h6">Voto anticipado</div>
@@ -18,10 +18,10 @@
       </div>
     </div>
     <TablaComp />
-    <ModalCaptura />
+    <ModalComp />
   </q-page>
 </template>
 <script setup>
 import TablaComp from "../components/TablaComp.vue";
-import ModalCaptura from "../../captura/components/ModalComp.vue";
+import ModalComp from "../components/ModalComp.vue";
 </script>

@@ -36,7 +36,6 @@
             Total de votos sistema: {{ totalVotos }}
           </div>
         </div>
-
         <q-card-section>
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
@@ -52,8 +51,8 @@
               class="my-card text-center no-box-shadow"
             >
               <q-card-section>
-                <q-avatar size="70px" font-size="82px" square>
-                  <img :src="partido.logo_Url" />
+                <q-avatar style="width: auto" square>
+                  <img :src="partido.logo_Url" :alt="partido.partido" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-ma-sm">
                   {{ partido.partido }}
@@ -135,7 +134,6 @@
                     resultados.encabezado.total_Votos_Candidatos_No_Registrados
                   "
                   mask="###"
-                  placeholder="0"
                   :name="`myTextTotales1`"
                   dense
                   input-class="text-right"
@@ -157,7 +155,6 @@
                   class="text-h6"
                   v-model="resultados.encabezado.total_Votos_Nulos"
                   mask="###"
-                  placeholder="0"
                   :name="`myTextTotales2`"
                   dense
                   input-class="text-right"
@@ -179,7 +176,6 @@
                   class="text-h6"
                   v-model="resultados.encabezado.total_Votos"
                   mask="###"
-                  placeholder="0"
                   :name="`myTextTotales3`"
                   dense
                   input-class="text-right"
@@ -198,8 +194,9 @@
                 @click="actualizarModal(false)"
               />
               <q-btn
+                v-if="modulo == null ? false : modulo.registrar"
                 label="Guardar"
-                @click="onSubmit"
+                type="submit"
                 color="secondary"
                 class="q-ml-sm"
               />
@@ -212,9 +209,10 @@
 </template>
 
 <script setup>
-import { useQuasar } from "quasar";
+import { useQuasar, QSpinnerCube } from "quasar";
 import { storeToRefs } from "pinia";
-import { computed, defineProps } from "vue";
+import { computed, defineProps, onBeforeMount } from "vue";
+import { useAuthStore } from "src/stores/auth-store";
 import { useRerservasStore } from "src/stores/reservas-store";
 import { useCapturaStore } from "src/stores/captura-store";
 import Swal from "sweetalert2";
@@ -224,14 +222,29 @@ import Swal from "sweetalert2";
 const $q = useQuasar();
 const reservasStore = useRerservasStore();
 const capturaStore = useCapturaStore();
+const authStore = useAuthStore();
+const { modulo } = storeToRefs(authStore);
 const { modal, encabezado } = storeToRefs(reservasStore);
 const { resultados } = storeToRefs(capturaStore);
 const props = defineProps({
   eleccion: { type: String, required: true },
   rp: { type: Boolean, required: true },
 });
+const siglas = "SC-REG-RES";
 
 //----------------------------------------------------------
+
+onBeforeMount(() => {
+  leerPermisos();
+});
+
+//--------------------------------------------------------------------
+
+const leerPermisos = async () => {
+  $q.loading.show();
+  await authStore.loadModulo(siglas);
+  $q.loading.hide();
+};
 
 const totalVotos = computed(() => {
   let total = 0;
@@ -256,7 +269,7 @@ const totalVotos = computed(() => {
 });
 
 const actualizarModal = (valor) => {
-  capturaStore.actualizarModal(valor);
+  reservasStore.actualizarModal(valor);
 };
 
 function getFocus(index, tipo) {
@@ -265,22 +278,27 @@ function getFocus(index, tipo) {
   if (tipo == "coalicion") {
     if (elementosCoaliciones == index + 1) {
       let docu = document.getElementsByName(`myTextTotales1`);
-      docu[1].focus();
+      docu[0].focus();
+      docu[0].select();
     } else {
       let docu = document.getElementsByName(`myTextCoalicion${index + 1}`);
-      docu[1].focus();
+      docu[0].focus();
+      docu[0].select();
     }
   } else if (tipo == "partido") {
     if (elementosPartidos == index + 1) {
       let docu = document.getElementsByName(`myTextCoalicion0`);
-      docu[1].focus();
+      docu[0].focus();
+      docu[0].select();
     } else {
       let docu = document.getElementsByName(`myText${index + 1}`);
-      docu[1].focus();
+      docu[0].focus();
+      docu[0].select();
     }
   } else {
     let docu = document.getElementsByName(`myTextTotales${index + 1}`);
-    docu[1].focus();
+    docu[0].focus();
+    docu[0].select();
   }
 }
 
@@ -325,7 +343,14 @@ const onSubmit = async () => {
     resultados.value.encabezado.total_Votos = parseInt(
       resultados.value.encabezado.total_Votos
     );
-    $q.loading.show();
+    $q.loading.show({
+      spinner: QSpinnerCube,
+      spinnerColor: "pink",
+      spinnerSize: 140,
+      backgroundColor: "purple-2",
+      message: "Espere un momento porfavor...",
+      messageColor: "black",
+    });
     if (props.rp == true) {
       resp = await capturaStore.registrarResultadosRp(resultados.value);
     } else {
@@ -333,20 +358,22 @@ const onSubmit = async () => {
     }
 
     if (resp.success) {
-      $q.notify({
-        position: "top-right",
-        type: "positive",
-        message: resp.data,
+      $q.loading.hide();
+      Swal.fire({
+        icon: "success",
+        title: resp.data,
+        showConfirmButton: false,
+        timer: 1500,
       });
       actualizarModal(false);
     } else {
+      $q.loading.hide();
       $q.notify({
         position: "top-right",
         type: "negative",
         message: resp.data,
       });
     }
-    $q.loading.hide();
   });
 };
 </script>

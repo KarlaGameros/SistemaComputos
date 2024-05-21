@@ -19,38 +19,14 @@
             v-close-popup
           />
         </q-card-section>
+
         <q-card-section>
-          <q-banner
-            inline-actions
-            class="text-justify bg-white"
-            style="border-radius: 20px"
-          >
-            <q-btn
-              :flat="integracion == false"
-              @click="integracion = true"
-              rounded
-              color="blue-grey"
-              label="Integración CLE"
-            />
-            <q-btn
-              @click="integracion = false"
-              rounded
-              :flat="integracion == true"
-              color="blue-grey"
-              label="Partidos políticos"
-            />
-          </q-banner>
-        </q-card-section>
-        <q-card-section>
+          <div class="text-h6 text-grey-9">Asistencia de consejerías</div>
           <q-table
-            :rows="
-              integracion == false
-                ? list_Integracion_Partidos
-                : list_Integracion_Consejerias
-            "
+            dense
+            :rows="list_Integracion_Consejerias"
             :columns="columns"
             :filter="filter"
-            :visible-columns="visible_columns"
             row-key="name"
             v-model:pagination="pagination"
             color="pink"
@@ -73,6 +49,7 @@
                 <q-td v-for="col in props.cols" :key="col.name" :props="props">
                   <div v-if="col.name === 'id'">
                     <q-btn
+                      size="lg"
                       flat
                       round
                       :color="props.row.presente == true ? 'green' : 'red'"
@@ -98,19 +75,45 @@
             </template>
           </q-table>
         </q-card-section>
-
+        <q-separator />
+        <q-card-section class="row">
+          <div class="text-h6 text-grey-9 col-6">
+            Asistencia de partidos políticos
+          </div>
+          <div class="text-right col-6">
+            <q-btn
+              label="Agregar"
+              color="pink"
+              icon-right="add"
+              @click="actualizarModalPartidos(true)"
+            />
+          </div>
+          <div v-for="partido in list_Integracion_Partidos" :key="partido">
+            <q-avatar
+              v-if="partido.presente_Propietario || partido.presente_Suplente"
+              square
+              style="width: auto; height: 45px"
+              class="q-pa-xs"
+            >
+              <img :src="partido.logo_Partido" :alt="partido.partido" />
+            </q-avatar>
+          </div>
+        </q-card-section>
+        <q-separator />
         <q-card-section class="q-pa-md">
           <div class="col-12 justify-end">
             <div class="text-right q-gutter-xs">
               <q-btn
+                icon-right="close"
                 label="Cancelar"
                 type="reset"
                 color="red"
                 @click="actualizarModal(false)"
               />
               <q-btn
+                icon-right="save"
                 type="submit"
-                label="Consultar"
+                label="Guardar"
                 color="secondary"
                 class="q-ml-sm"
               />
@@ -126,7 +129,7 @@
 import { storeToRefs } from "pinia";
 import { useQuasar, QSpinnerCube } from "quasar";
 import { useConsultaStore } from "src/stores/consulta-store";
-import { onBeforeMount, ref, watch } from "vue";
+import { onBeforeMount, ref } from "vue";
 
 //-----------------------------------------------------------
 
@@ -137,8 +140,6 @@ const {
   list_Integracion_Partidos,
   list_Integracion_Consejerias,
 } = storeToRefs(consultaStore);
-const integracion = ref(true);
-const visible_columns = ref([]);
 
 //-----------------------------------------------------------
 
@@ -146,29 +147,7 @@ onBeforeMount(() => {
   cargarData();
 });
 
-watch(integracion, (val) => {
-  if (val != null) {
-    evalua_columnas();
-  }
-});
-
 //-----------------------------------------------------------
-
-const evalua_columnas = () => {
-  switch (integracion.value) {
-    case true:
-      visible_columns.value = ["nombre_Completo", "puesto", "id"];
-      break;
-    case false:
-      visible_columns.value = [
-        "nombre_Completo",
-        "puesto",
-        "logo_Partido",
-        "id",
-      ];
-      break;
-  }
-};
 
 const cargarData = async () => {
   $q.loading.show({
@@ -179,7 +158,6 @@ const cargarData = async () => {
     message: "Espere un momento porfavor...",
     messageColor: "black",
   });
-  evalua_columnas();
   await consultaStore.loadIntegracionConsejerias();
   await consultaStore.loadIntegracionPartidosPoliticos();
   consultaStore.actualizarModal(true);
@@ -190,9 +168,20 @@ const actualizarModal = (valor) => {
   consultaStore.actualizarModalIntegracion(valor);
 };
 
+const actualizarModalPartidos = (valor) => {
+  consultaStore.actualizarModalPartidos(valor);
+};
+
 const onSubmit = () => {};
 
 const columns = [
+  {
+    name: "oficina",
+    align: "center",
+    label: "Oficina",
+    field: "oficina",
+    sortable: true,
+  },
   {
     name: "nombre_Completo",
     align: "center",
@@ -203,21 +192,14 @@ const columns = [
   {
     name: "puesto",
     align: "center",
-    label: "Puesto",
+    label: "Cargo",
     field: "puesto",
-    sortable: true,
-  },
-  {
-    name: "logo_Partido",
-    align: "center",
-    label: "Partido",
-    field: "logo_Partido",
     sortable: true,
   },
   {
     name: "id",
     align: "center",
-    label: "Acciones",
+    label: "Asistencia",
     field: "id",
     sortable: true,
   },

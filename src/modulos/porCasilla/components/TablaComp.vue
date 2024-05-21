@@ -10,7 +10,7 @@
     <div class="q-pa-lg">
       <q-banner
         inline-actions
-        class="text-justify bg-white"
+        :class="$q.dark.isActive ? 'text-justify' : 'text-justify bg-white'"
         style="border-radius: 20px"
       >
         <q-btn
@@ -71,7 +71,8 @@
                   <q-tr
                     :props="props"
                     :class="
-                      props.row.total_Sistema != props.row.total_Capturado
+                      props.row.total_Sistema != props.row.total_Capturado ||
+                      props.row.total_Capturado > props.row.boletas
                         ? 'bg-red text-white'
                         : ''
                     "
@@ -87,7 +88,9 @@
                           flat
                           round
                           :color="
-                            props.row.total_Sistema != props.row.total_Capturado
+                            props.row.total_Sistema !=
+                              props.row.total_Capturado ||
+                            props.row.total_Capturado > props.row.boletas
                               ? 'white'
                               : 'pink'
                           "
@@ -132,8 +135,9 @@
                   <q-tr
                     :props="props"
                     :class="
-                      props.row.total_Sistema != props.row.total_Capturado
-                        ? 'bg-red'
+                      props.row.total_Sistema != props.row.total_Capturado ||
+                      props.row.total_Capturado > props.row.boletas
+                        ? 'bg-red text-white'
                         : ''
                     "
                   >
@@ -147,7 +151,13 @@
                           v-if="modulo == null ? false : modulo.leer"
                           flat
                           round
-                          color="pink"
+                          :color="
+                            props.row.total_Sistema !=
+                              props.row.total_Capturado ||
+                            props.row.total_Capturado > props.row.boletas
+                              ? 'white'
+                              : 'pink'
+                          "
                           icon="search"
                           @click="verResultados(props.row, 'RP')"
                         >
@@ -217,9 +227,11 @@ const evalua_columnas = () => {
         "municipio",
         "distrito",
         "seccion",
+        "casilla",
         "tipo",
         "total_Sistema",
         "total_Capturado",
+        "boletas",
         "id",
       ];
       break;
@@ -228,9 +240,11 @@ const evalua_columnas = () => {
         "usuario",
         "municipio",
         "seccion",
+        "casilla",
         "tipo",
         "total_Sistema",
         "total_Capturado",
+        "boletas",
         "id",
       ];
       break;
@@ -240,9 +254,11 @@ const evalua_columnas = () => {
         "municipio",
         "demarcacion",
         "seccion",
+        "casilla",
         "tipo",
         "total_Sistema",
         "total_Capturado",
+        "boletas",
         "id",
       ];
       break;
@@ -296,17 +312,19 @@ const verResultados = async (row, tipo) => {
   });
   await casillaStore.load_por_casilla_id(
     row.id,
+    row.distrito,
     row.municipio,
     row.seccion,
     row.casilla,
     row.tipo,
-    tipo
+    tipo,
+    eleccion.value
   );
   casillaStore.initResultados();
   if (tipo == "MR") {
-    await casillaStore.load_resultados_mr(row.id);
+    await casillaStore.load_resultados_mr(row.id, row.boletas);
   } else {
-    await casillaStore.load_resultados_rp(row.id);
+    await casillaStore.load_resultados_rp(row.id, row.boletas);
   }
   casillaStore.actualizarModal(true);
   $q.loading.hide();
@@ -374,6 +392,13 @@ const columns = [
     align: "center",
     label: "Total capturado",
     field: "total_Capturado",
+    sortable: true,
+  },
+  {
+    name: "boletas",
+    align: "center",
+    label: "Total boletas",
+    field: "boletas",
     sortable: true,
   },
   {

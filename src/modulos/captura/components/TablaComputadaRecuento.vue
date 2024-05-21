@@ -35,7 +35,7 @@
         <q-td v-for="col in props.cols" :key="col.name" :props="props">
           <div v-if="col.name === 'id'">
             <q-btn
-              v-if="tipo == 'recuento' && modulo == null ? false : modulo.leer"
+              v-if="modulo == null ? false : modulo.leer && tipo == 'recuento'"
               flat
               round
               color="green"
@@ -52,10 +52,9 @@
               icon="edit_square"
               @click="tipoComputoAlert(props.row)"
             >
-              <q-tooltip>Ver acuerdo</q-tooltip>
+              <q-tooltip>Capturar resultados</q-tooltip>
             </q-btn>
           </div>
-
           <label v-else>{{ col.value }}</label>
         </q-td>
       </q-tr>
@@ -69,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, watch, onBeforeMount } from "vue";
+import { ref, defineProps, watch, onBeforeMount, watchEffect } from "vue";
 import { useCapturaStore } from "src/stores/captura-store";
 import { useRerservasStore } from "src/stores/reservas-store";
 import { storeToRefs } from "pinia";
@@ -189,6 +188,24 @@ watch(props, (val) => {
   }
 });
 
+watchEffect(() => {
+  switch (props.tipo_siglas) {
+    case "DIP":
+    case "REG":
+      if (props.rp == true) {
+        loading.value = pendientes_cotejo.value.length == 0;
+        loading.value = pendientes_recuento.value.length == 0;
+      } else {
+        loading.value = pendientes_cotejo_rp.value.length == 0;
+        loading.value = pendientes_recuento_rp.value.length == 0;
+      }
+      break;
+    case "PYS":
+      loading.value = pendientes_cotejo.value.length == 0;
+      break;
+  }
+});
+
 //----------------------------------------------------------
 
 const modalCausales = async (row, valor) => {
@@ -203,6 +220,8 @@ const leerPermisos = async () => {
 };
 
 const evalua_columnas = () => {
+  loading.value = true;
+  filter.value = "";
   switch (props.tipo_siglas) {
     case "DIP":
       visible_columns.value = [
@@ -234,6 +253,7 @@ const evalua_columnas = () => {
       ];
       break;
   }
+  loading.value = false;
 };
 
 //Cotejo 1
@@ -268,7 +288,7 @@ const tipoComputoAlert = (row) => {
     cancelButtonText: "Cancelar",
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
-    confirmButtonText: `Siguiente&nbsp;<i class="fa fa-arrow-right"></i> `,
+    confirmButtonText: `Siguiente &nbsp;<i class="fa fa-arrow-right"></i>`,
     inputValidator: (value) => {
       return new Promise((resolve) => {
         if (value != "") {
@@ -292,7 +312,6 @@ const tipoComputoAlert = (row) => {
 };
 
 const recuentoAlert = async (row) => {
-  console.log(row);
   Swal.fire({
     title: "¿Se han reservado votos en esta casilla para esta elección?",
     icon: "warning",
@@ -311,6 +330,14 @@ const recuentoAlert = async (row) => {
 };
 
 const reservar = async (id) => {
+  $q.loading.show({
+    spinner: QSpinnerCube,
+    spinnerColor: "pink",
+    spinnerSize: 140,
+    backgroundColor: "purple-2",
+    message: "Espere un momento porfavor...",
+    messageColor: "black",
+  });
   let resp = null;
   if (props.rp == true) {
     resp = await reservasStore.reservarRp(id);
@@ -318,10 +345,12 @@ const reservar = async (id) => {
     resp = await reservasStore.reservarMr(id);
   }
   if (resp.success == true) {
-    $q.notify({
-      position: "top-right",
-      type: "positive",
-      message: resp.data,
+    $q.loading.hide();
+    Swal.fire({
+      icon: "success",
+      title: resp.data,
+      showConfirmButton: false,
+      timer: 1500,
     });
     if (props.rp == true) {
       await capturaStore.load_cotejo_rp(props.tipo_id);
@@ -330,8 +359,8 @@ const reservar = async (id) => {
       await capturaStore.load_cotejo(props.tipo_id);
       await capturaStore.load_recuento(props.tipo_id);
     }
-    loading.value = false;
   } else {
+    $q.loading.hide();
     $q.notify({
       position: "top-right",
       type: "negative",
@@ -349,7 +378,7 @@ const grupoTrabajoAlert = () => {
     cancelButtonText: "Cancelar",
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
-    confirmButtonText: `Siguiente&nbsp;<i class="fa fa-arrow-right"></i> `,
+    confirmButtonText: `Siguiente &nbsp;<i class="fa fa-arrow-right"></i> `,
     inputValidator: (value) => {
       return new Promise((resolve) => {
         if (value != "") {
@@ -376,7 +405,7 @@ const puntoRecuentoAlert = () => {
     cancelButtonText: "Cancelar",
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
-    confirmButtonText: `Siguiente&nbsp;<i class="fa fa-arrow-right"></i> `,
+    confirmButtonText: `Siguiente &nbsp;<i class="fa fa-arrow-right"></i>`,
     inputValidator: (value) => {
       return new Promise((resolve) => {
         if (value != "") {
@@ -412,7 +441,7 @@ const resumen = () => {
     cancelButtonText: "Cancelar",
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
-    confirmButtonText: "Iniciar captura",
+    confirmButtonText: `Iniciar captura &nbsp;<i class="fa fa-arrow-right"></i>`,
   }).then(async (result) => {
     if (result.isConfirmed) {
       $q.loading.show({
@@ -423,7 +452,6 @@ const resumen = () => {
         message: "Espere un momento porfavor...",
         messageColor: "black",
       });
-
       if (props.rp == true) {
         await capturaStore.incicializar_resultados_rp(
           props.tipo_id,
@@ -465,7 +493,7 @@ const resumenCotejo = () => {
     cancelButtonText: "Cancelar",
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
-    confirmButtonText: "Iniciar captura",
+    confirmButtonText: `Iniciar captura &nbsp;<i class="fa fa-arrow-right"></i>`,
   }).then(async (result) => {
     if (result.isConfirmed) {
       $q.loading.show({
@@ -476,7 +504,6 @@ const resumenCotejo = () => {
         message: "Espere un momento porfavor...",
         messageColor: "black",
       });
-
       if (props.rp == true) {
         await capturaStore.incicializar_resultados_rp(
           props.tipo_id,
@@ -498,8 +525,6 @@ const resumenCotejo = () => {
       }
       capturaStore.actualizarModal(true);
       $q.loading.hide();
-    } else if (result.isDenied) {
-      Swal.fire("Los datos capturados no se guardarán", "", "info");
     }
   });
 };

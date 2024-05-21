@@ -13,14 +13,20 @@
               Resultados de la sección {{ resultado_casilla.seccion }} de la
               casilla {{ resultado_casilla.casilla }} de la elección a
               {{
-                props.eleccion == "DIP"
+                resultado_casilla.eleccion == "DIP"
                   ? "Diputaciones"
-                  : props.eleccion == "PYS"
+                  : resultado_casilla.eleccion == "PYS"
                   ? "Presidencias y Sindicaturas"
                   : "Regidurías"
               }}.
+              {{
+                resultado_casilla.eleccion == "DIP"
+                  ? `Municipio ${resultado_casilla.municipio} - Distrito ${resultado_casilla.distrito}`
+                  : resultado_casilla.eleccion == "REG"
+                  ? `Municipio ${resultado_casilla.municipio} - ${resultado_casilla.demarcacion}`
+                  : `Municipio ${resultado_casilla.municipio}`
+              }}
             </div>
-
             <q-space />
             <q-btn
               icon="close"
@@ -34,6 +40,26 @@
           <div class="row bg-blue-grey-3 q-pl-md text-bold text-h6">
             Total de votos sistema: {{ resultados.encabezado.total_Sistema }}
           </div>
+          <q-banner
+            v-show="
+              resultados.encabezado.total_Sistema !=
+                resultados.encabezado.total_Votos ||
+              resultados.encabezado.total_Votos > resultados.boletas
+            "
+            class="bg-red"
+          >
+            <template v-slot:avatar>
+              <q-icon name="warning" color="white" />
+            </template>
+            <div class="text-white text-bold">
+              {{
+                resultados.encabezado.total_Sistema !=
+                resultados.encabezado.total_Votos
+                  ? "El total de votos capturado es mayor al total de votos sistema"
+                  : "El total de votos es mayor al número de boletas entregadas"
+              }}
+            </div>
+          </q-banner>
         </div>
         <br />
         <div class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6">
@@ -178,11 +204,13 @@
           <div class="col-12 justify-end">
             <div class="text-right q-gutter-xs">
               <q-btn
+                icon-right="cancel"
                 label="Cancelar"
                 color="red"
                 @click="actualizarModal(false)"
               />
               <q-btn
+                icon-right="check_circle"
                 v-if="modulo == null ? false : modulo.registrar"
                 label="Solicitar corrección"
                 type="submit"
@@ -220,7 +248,6 @@ const props = defineProps({
 });
 const siglas = "SC-REG-CAS";
 const motivo = ref(null);
-
 //--------------------------------------------------------------------
 
 onBeforeMount(() => {
@@ -236,6 +263,7 @@ const leerPermisos = async () => {
 };
 
 const actualizarModal = (valor) => {
+  casillaStore.initResultados();
   casillaStore.actualizarModal(valor);
 };
 
@@ -291,11 +319,11 @@ const solicitarCorreccion = async () => {
           cancelButtonText: "Cerrar",
         });
       } else {
-        Swal.fire({
-          title: "Ha ocurrido un error",
-          text: resp.data,
-          icon: "error",
-          cancelButtonText: "Cerrar",
+        $q.loading.hide();
+        $q.notify({
+          position: "top-right",
+          type: "negative",
+          message: resp.data,
         });
       }
       $q.loading.hide();

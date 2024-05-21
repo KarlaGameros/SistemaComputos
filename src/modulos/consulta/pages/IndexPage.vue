@@ -1,6 +1,6 @@
 <template>
   <q-page>
-    <div class="row bg-white">
+    <div :class="$q.dark.isActive ? 'row' : 'row bg-white'">
       <div class="col-10">
         <div class="q-pa-md q-gutter-sm">
           <div class="text-blue-grey-5 text-h6">Reporte de resultados</div>
@@ -21,7 +21,7 @@
           <q-btn
             @click="actualizarModal(true)"
             color="blue-grey-5"
-            icon="search"
+            icon-right="search"
             label="Nuevo filtro"
           />
         </div>
@@ -30,6 +30,8 @@
     <ReporteComp />
     <ModalComp />
     <ModalIntegracionOficinas />
+    <ModalIntegracionPartidos />
+    <ModalCambiarRep />
   </q-page>
 </template>
 <script setup>
@@ -37,8 +39,14 @@ import { useConsultaStore } from "src/stores/consulta-store";
 import ReporteComp from "../components/ReporteComp.vue";
 import ModalComp from "../components/ModalComp.vue";
 import ModalIntegracionOficinas from "../components/ModalIntegracionOficinas.vue";
+import ModalIntegracionPartidos from "../components/ModalIntegracionPartidos.vue";
+import ModalCambiarRep from "../components/ModalCambiarRep.vue";
+
+//-----------------------------------------------------------
 
 const consultaStore = useConsultaStore();
+
+//-----------------------------------------------------------
 
 const actualizarModal = (valor) => {
   consultaStore.actualizarModalIntegracion(false);

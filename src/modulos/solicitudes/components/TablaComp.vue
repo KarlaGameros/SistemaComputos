@@ -2,7 +2,7 @@
   <div class="q-pa-lg">
     <q-banner
       inline-actions
-      class="text-justify bg-white"
+      :class="$q.dark.isActive ? 'text-justify' : 'text-justify bg-white'"
       style="border-radius: 20px"
     >
       <q-btn
@@ -38,7 +38,141 @@
           <q-tab-panel name="MR">
             <q-table
               title="Listado de solicitudes"
-              :rows="list_Solicitudes_Mr"
+              :rows="list_Filtrado"
+              :columns="columns"
+              :filter="filter"
+              :visible-columns="visible_columns"
+              row-key="name"
+              v-model:pagination="pagination"
+              color="pink"
+            >
+              <template v-slot:top-left>
+                <q-select
+                  filled
+                  color="pink"
+                  class="q-pr-md"
+                  v-model="estatus_Id"
+                  :options="list_Estatus"
+                  label="Seleccione estatus"
+                  hint="Filtrar por estatus"
+                  style="width: 200px"
+                />
+              </template>
+              <template v-slot:top-right>
+                <q-input
+                  borderless
+                  dense
+                  debounce="300"
+                  v-model="filter"
+                  placeholder="Buscar"
+                >
+                  <template v-slot:append>
+                    <q-icon name="search" />
+                  </template>
+                </q-input>
+              </template>
+              <template v-slot:body="props">
+                <q-tr :props="props">
+                  <q-td
+                    v-for="col in props.cols"
+                    :key="col.name"
+                    :props="props"
+                  >
+                    <div v-if="col.name === 'id'">
+                      <q-btn
+                        v-if="
+                          modulo == null
+                            ? false
+                            : modulo.leer &&
+                              (props.row.aprobado == false ||
+                                props.row.aprobado == null)
+                        "
+                        flat
+                        round
+                        color="pink"
+                        icon="search"
+                        @click="verCaptura(props.row, 'MR')"
+                      >
+                        <q-tooltip>Ver captura</q-tooltip>
+                      </q-btn>
+                      <q-btn
+                        v-if="
+                          modulo == null
+                            ? false
+                            : modulo.registrar && props.row.aprobado == null
+                        "
+                        flat
+                        round
+                        color="pink"
+                        icon="check_circle"
+                        @click="aprobarSolicitud(props.row)"
+                      >
+                        <q-tooltip>Aprobar solicitud</q-tooltip>
+                      </q-btn>
+                      <q-btn
+                        v-if="
+                          modulo == null
+                            ? false
+                            : modulo.registrar && props.row.aprobado == null
+                        "
+                        flat
+                        round
+                        color="pink"
+                        icon="cancel"
+                        @click="rechazarSolicitud(props.row)"
+                      >
+                        <q-tooltip>Rechazar solicitud</q-tooltip>
+                      </q-btn>
+                    </div>
+                    <div v-else-if="col.name == 'aprobado'">
+                      <q-badge
+                        rounded
+                        class="q-pa-xs"
+                        :label="
+                          col.value == true
+                            ? 'Solicitud aprobada'
+                            : col.value == false
+                            ? 'Solicitud rechazada'
+                            : 'Solicitud pendiente'
+                        "
+                        :color="
+                          col.value == true
+                            ? 'green'
+                            : col.value == false
+                            ? 'red'
+                            : 'orange'
+                        "
+                        :name="
+                          col.value == true
+                            ? 'done'
+                            : col.value == false
+                            ? 'close'
+                            : 'orange'
+                        "
+                      >
+                        <q-icon
+                          :name="
+                            col.value == true
+                              ? 'done'
+                              : col.value == false
+                              ? 'close'
+                              : 'warning'
+                          "
+                          size="14px"
+                          class="q-ml-xs"
+                        />
+                      </q-badge>
+                    </div>
+                    <label v-else>{{ col.value }}</label>
+                  </q-td>
+                </q-tr>
+              </template>
+            </q-table>
+          </q-tab-panel>
+          <q-tab-panel name="RP">
+            <q-table
+              title="Listado de solicitudes"
+              :rows="list_Filtrado"
               :columns="columns"
               :filter="filter"
               :visible-columns="visible_columns"
@@ -69,102 +203,12 @@
                     <div v-if="col.name === 'id'">
                       <q-btn
                         v-if="
-                          props.row.aprobado == false ||
-                          props.row.aprobado == null
+                          modulo == null
+                            ? false
+                            : modulo.leer &&
+                              (props.row.aprobado == false ||
+                                props.row.aprobado == null)
                         "
-                        flat
-                        round
-                        color="pink"
-                        icon="search"
-                        @click="verCaptura(props.row, 'MR')"
-                      >
-                        <q-tooltip>Ver captura</q-tooltip>
-                      </q-btn>
-                      <q-btn
-                        v-if="props.row.aprobado == null"
-                        flat
-                        round
-                        color="pink"
-                        icon="check_circle"
-                        @click="aprobarSolicitud(props.row)"
-                      >
-                        <q-tooltip>Aprobar solicitud</q-tooltip>
-                      </q-btn>
-                      <q-btn
-                        v-if="props.row.aprobado == null"
-                        flat
-                        round
-                        color="pink"
-                        icon="cancel"
-                        @click="rechazarSolicitud(props.row)"
-                      >
-                        <q-tooltip>Rechazar solicitud</q-tooltip>
-                      </q-btn>
-                    </div>
-                    <div v-else-if="col.name == 'aprobado'">
-                      <q-badge
-                        :label="
-                          col.value == true
-                            ? 'Solicitud aprobada'
-                            : col.value == false
-                            ? 'Solicitud rechazada'
-                            : 'Solicitud pendiente'
-                        "
-                        :color="
-                          col.value == true
-                            ? 'green'
-                            : col.value == false
-                            ? 'red'
-                            : 'orange'
-                        "
-                        :name="
-                          col.value == true
-                            ? 'done'
-                            : col.value == false
-                            ? 'close'
-                            : 'orange'
-                        "
-                      />
-                    </div>
-                    <label v-else>{{ col.value }}</label>
-                  </q-td>
-                </q-tr>
-              </template>
-            </q-table>
-          </q-tab-panel>
-          <q-tab-panel name="RP">
-            <q-table
-              title="Listado de solicitudes"
-              :rows="list_Solicitudes_Rp"
-              :columns="columns"
-              :filter="filter"
-              :visible-columns="visible_columns"
-              row-key="name"
-              v-model:pagination="pagination"
-              color="pink"
-            >
-              <template v-slot:top-right>
-                <q-input
-                  borderless
-                  dense
-                  debounce="300"
-                  v-model="filter"
-                  placeholder="Buscar"
-                >
-                  <template v-slot:append>
-                    <q-icon name="search" />
-                  </template>
-                </q-input>
-              </template>
-              <template v-slot:body="props">
-                <q-tr :props="props">
-                  <q-td
-                    v-for="col in props.cols"
-                    :key="col.name"
-                    :props="props"
-                  >
-                    <div v-if="col.name === 'id'">
-                      <q-btn
                         flat
                         round
                         color="pink"
@@ -174,7 +218,11 @@
                         <q-tooltip>Ver captura</q-tooltip>
                       </q-btn>
                       <q-btn
-                        v-if="props.row.aprobado == null"
+                        v-if="
+                          modulo == null
+                            ? false
+                            : modulo.registrar && props.row.aprobado == null
+                        "
                         flat
                         round
                         color="pink"
@@ -184,7 +232,11 @@
                         <q-tooltip>Aprobar solicitud</q-tooltip>
                       </q-btn>
                       <q-btn
-                        v-if="props.row.aprobado == null"
+                        v-if="
+                          modulo == null
+                            ? false
+                            : modulo.registrar && props.row.aprobado == null
+                        "
                         flat
                         round
                         color="pink"
@@ -234,10 +286,11 @@
 
 <script setup>
 import { useQuasar, QSpinnerCube } from "quasar";
-import { onBeforeMount, ref } from "vue";
+import { onBeforeMount, ref, watchEffect } from "vue";
 import { useCasillaStore } from "src/stores/casilla-store";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
+import { useAuthStore } from "src/stores/auth-store";
 import { useSolicitudesStore } from "src/stores/solicitudes-store";
 import Swal from "sweetalert2";
 import ModalComp from "../../porCasilla/components/ModalComp.vue";
@@ -248,6 +301,8 @@ const $q = useQuasar();
 const casillaStore = useCasillaStore();
 const configuracionStore = useConfiguracionStore();
 const solicitudesStore = useSolicitudesStore();
+const authStore = useAuthStore();
+const { modulo } = storeToRefs(authStore);
 const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
 const { list_Solicitudes_Mr, list_Solicitudes_Rp } =
   storeToRefs(solicitudesStore);
@@ -255,6 +310,18 @@ const eleccion = ref("DIP");
 const eleccion_Id = ref(null);
 const tab = ref("MR");
 const loading = ref(false);
+const list_Estatus = ref([
+  "Todos",
+  "Solicitud aprobada",
+  "Solicitud pendiente",
+  "Solicitud rechazada",
+]);
+const estatus_Id = ref("Todos");
+const siglas = "SC-REG-SOL";
+const list_Filtrado = ref([]);
+
+//-----------------------------------------------------------
+
 const visible_columns = ref([
   "usuario_Solicita",
   "usuario_Aprueba",
@@ -262,6 +329,7 @@ const visible_columns = ref([
   "distrito",
   "casilla",
   "aprobado",
+  "fecha_Solicitud",
   "id",
 ]);
 const columns = [
@@ -322,6 +390,13 @@ const columns = [
     sortable: true,
   },
   {
+    name: "fecha_Solicitud",
+    align: "center",
+    label: "Fecha de solicitud",
+    field: "fecha_Solicitud",
+    sortable: true,
+  },
+  {
     name: "id",
     align: "center",
     label: "Acciones",
@@ -329,20 +404,28 @@ const columns = [
     sortable: true,
   },
 ];
-
 const filter = ref("");
 const pagination = ref({
-  sortBy: "desc",
-  descending: false,
+  sortBy: "asc",
+  descending: true,
   page: 1,
   rowsPerPage: 5,
 });
 
+//-----------------------------------------------------------
+
 onBeforeMount(() => {
+  leerPermisos();
   cargarData();
 });
 
 //-----------------------------------------------------------
+
+const leerPermisos = async () => {
+  $q.loading.show();
+  await authStore.loadModulo(siglas);
+  $q.loading.hide();
+};
 
 const evalua_columnas = () => {
   switch (eleccion.value) {
@@ -354,6 +437,7 @@ const evalua_columnas = () => {
         "distrito",
         "casilla",
         "aprobado",
+        "fecha_Solicitud",
         "id",
       ];
       break;
@@ -365,6 +449,7 @@ const evalua_columnas = () => {
         "municipio",
         "casilla",
         "aprobado",
+        "fecha_Solicitud",
         "id",
       ];
       break;
@@ -377,6 +462,7 @@ const evalua_columnas = () => {
         "demarcacion",
         "casilla",
         "aprobado",
+        "fecha_Solicitud",
         "id",
       ];
       break;
@@ -494,4 +580,37 @@ const rechazarSolicitud = (row) => {
     }
   });
 };
+
+const filtrar = (list_Solicitudes, filtro) => {
+  list_Filtrado.value = list_Solicitudes.filter((item) => {
+    let cumple = true;
+    if (filtro.estatus !== undefined) {
+      if (filtro.estatus == "Todos") {
+        cumple = cumple && item.validado === item.validado;
+      } else {
+        if (filtro.estatus == "Validado") {
+          cumple = cumple && item.validado === true;
+        } else if (filtro.estatus == "Sin validar") {
+          cumple = cumple && item.validado === false;
+        } else {
+          cumple =
+            cumple &&
+            item.informacion_Pausada != null &&
+            item.informacion_Pausada != "";
+        }
+      }
+    }
+
+    return cumple;
+  });
+};
+
+watchEffect(() => {
+  const filtro = {};
+  if (estatus_Id.value != null) filtro.estatus = estatus_Id.value;
+  filtrar(
+    tab.value == "MR" ? list_Solicitudes_Mr.value : list_Solicitudes_Rp.value,
+    filtro
+  );
+});
 </script>

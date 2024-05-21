@@ -2,7 +2,7 @@
   <div class="q-pa-lg">
     <q-banner
       inline-actions
-      class="text-justify bg-white"
+      :class="$q.dark.isActive ? 'text-justify' : 'bg-white'"
       style="border-radius: 20px"
     >
       <q-btn

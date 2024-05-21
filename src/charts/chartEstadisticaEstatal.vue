@@ -14,14 +14,20 @@ import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
 import { onMounted, watch, ref } from "vue";
 
+//----------------------------------------------------------
+
 const configuracionStore = useConfiguracionStore();
 const { list_Municipios } = storeToRefs(configuracionStore);
 const category = ref([]);
 const series = ref([]);
 
+//----------------------------------------------------------
+
 onMounted(() => {
   rellenarGrafica();
 });
+
+//----------------------------------------------------------
 
 watch(list_Municipios, (val) => {
   series.value = [];
@@ -29,6 +35,8 @@ watch(list_Municipios, (val) => {
     rellenarGrafica();
   }
 });
+
+//----------------------------------------------------------
 
 const rellenarGrafica = () => {
   if (category.value.length == 0) {
@@ -70,6 +78,39 @@ const options = {
   chart: {
     type: "bar",
     height: 350,
+    toolbar: {
+      show: true,
+      offsetX: 0,
+      offsetY: 0,
+      tools: {
+        download: true,
+        selection: true,
+        zoom: true,
+        zoomin: true,
+        zoomout: true,
+        pan: true,
+        reset: true | '<img src="/static/icons/reset.png" width="20">',
+        customIcons: [],
+      },
+      export: {
+        csv: {
+          filename: "EstadisticaEstatal",
+          columnDelimiter: ",",
+          headerCategory: "Municipio",
+          headerValue: "Cantidad",
+          dateFormatter(timestamp) {
+            return new Date(timestamp).toDateString();
+          },
+        },
+        svg: {
+          filename: "EstadisticaEstatal",
+        },
+        png: {
+          filename: "EstadisticaEstatal",
+        },
+      },
+      autoSelected: "zoom",
+    },
   },
   plotOptions: {
     bar: {

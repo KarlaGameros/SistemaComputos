@@ -9,6 +9,8 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     list_por_casilla_rp: [],
     resultado_casilla: {
       id: null,
+      distrito: null,
+      eleccion: null,
       usuario: null,
       municipio: null,
       seccion: null,
@@ -19,6 +21,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
       tipoCandidatura: null,
     },
     resultados: {
+      boletas: null,
       encabezado: {
         grupo_Trabajo: null,
         id: null,
@@ -41,6 +44,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     },
 
     initResultados() {
+      this.resultados.boletas = null;
       this.resultados.encabezado.id = null;
       this.resultados.encabezado.grupo_Trabajo = null;
       this.resultados.encabezado.punto_Recuento = null;
@@ -78,6 +82,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
                 tipo: element.tipo,
                 total_Sistema: element.total_Sistema,
                 total_Capturado: element.total_Capturado,
+                boletas: element.boletas,
               };
             });
           }
@@ -91,13 +96,17 @@ export const useCasillaStore = defineStore("useCasillaStore", {
 
     async load_por_casilla_id(
       id,
+      distrito,
       municipio,
       seccion,
       casilla,
       tipo,
-      tipoCandidatura
+      tipoCandidatura,
+      eleccion
     ) {
       try {
+        this.resultado_casilla.eleccion = eleccion;
+        this.resultado_casilla.distrito = distrito;
         this.resultado_casilla.id = id;
         this.resultado_casilla.municipio = municipio;
         this.resultado_casilla.seccion = seccion;
@@ -113,13 +122,14 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     },
 
     //--------------------------------------------------------------
-    async load_resultados_mr(id) {
+    async load_resultados_mr(id, boletas) {
       try {
         this.loading = true;
         const resp = await api.get(`/ResultadoComputos/ByResultado/${id}`);
         if (resp.status == 200) {
           const { success, data } = resp.data;
           if (success) {
+            this.resultados.boletas = boletas;
             this.resultados.encabezado.id = data.encabezado.id;
             this.resultados.encabezado.grupo_Trabajo =
               data.encabezado.grupo_Trabajo;
@@ -199,6 +209,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
                 tipo: element.tipo,
                 total_Sistema: element.total_Sistema,
                 total_Capturado: element.total_Capturado,
+                boletas: element.boletas,
               };
             });
           }
@@ -211,13 +222,14 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     },
 
     //--------------------------------------------------------------
-    async load_resultados_rp(id) {
+    async load_resultados_rp(id, boletas) {
       try {
         this.loading = true;
         const resp = await api.get(`/ResultadoComputos/ByResultadoRp/${id}`);
         if (resp.status == 200) {
           const { success, data } = resp.data;
           if (success && data.length != 0) {
+            this.resultados.boletas = boletas;
             this.resultados.encabezado.id = data.encabezado.id;
             this.resultados.encabezado.grupo_Trabajo =
               data.encabezado.grupo_Trabajo;

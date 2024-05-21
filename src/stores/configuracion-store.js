@@ -42,7 +42,7 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
     //GEL ALL PARTIDOS POLITICOS
     async loadPartidosPoliticos() {
       try {
-        let resp = await api.get("/Partidos_Politicos");
+        let resp = await api.get("/Partidos_Politicos/Partidos");
         let { data } = resp.data;
         this.list_Partidos_Politicos = data.map((partido) => {
           return {
