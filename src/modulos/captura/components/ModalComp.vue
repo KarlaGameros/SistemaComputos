@@ -269,7 +269,7 @@ const totalVotos = computed(() => {
   }
   for (let coalicion of resultados.value.coaliciones) {
     total += parseInt(coalicion.votos);
-    if (coalicion.votos == "" || partido.votos == NaN) {
+    if (coalicion.votos == "" || coalicion.votos == NaN) {
       coalicion.votos = 0;
     }
   }
