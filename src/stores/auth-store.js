@@ -14,9 +14,11 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     async loadSistemas() {
       try {
+        console.log("---entro");
         const resp = await api.get(`/SistemasUsuarios/ByUSuario`);
         if (resp.status == 200) {
           const { success, data } = resp.data;
+          console.log("---", data);
           if (success === true) {
             if (data) {
               const sistemasArray = data.map((sistema) => {
