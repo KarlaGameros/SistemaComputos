@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { api } from "src/boot/axios";
+import { EncryptStorage } from "storage-encryption";
 
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 export const useConfiguracionStore = defineStore("useConfiguracionStore", {
   state: () => ({
     list_Tipo_Elecciones: [],
@@ -9,6 +11,8 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
     list_Municipios: [],
     list_Demarcaciones: [],
     list_Distritos: [],
+    list_Distritos_By_Municipio: [],
+    list_Candidatos_By_Partido: [],
   }),
   actions: {
     //----------------------------------------------------------------------
@@ -34,6 +38,47 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
         return {
           success: false,
           data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    //-----------------------------------------------------------
+    async loadCandidatosByPartido(partido, eleccion, municipio_id) {
+      try {
+        let resp = await api.get(
+          `/Candidatos/ByPartidoTipoEleccion/${partido}/${eleccion}`
+        );
+        let { data } = resp.data;
+        let filtro = null;
+        if (municipio_id == null) {
+          filtro = data.filter((x) => x.tipo_Candidato == "RP");
+        } else {
+          filtro = data.filter(
+            (x) => x.tipo_Candidato == "RP" && x.municipio_Id == municipio_id
+          );
+        }
+        let contador = 1;
+        let idsVistos = {};
+        this.list_Candidatos_By_Partido = filtro.map((candidato) => {
+          if (idsVistos[candidato.id]) {
+            contador++;
+          } else {
+            contador = 1;
+            idsVistos[candidato.id] = true;
+          }
+          let label = ` ${contador}-${candidato.nombres} ${candidato.apellido_Paterno}`;
+          if (candidato.apellido_Materno != null) {
+            label += ` ${candidato.apellido_Materno}`;
+          }
+          return {
+            value: candidato.id,
+            label: label,
+          };
+        });
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, intentelo de nuevo. Si el error persiste, contacte a soporte",
         };
       }
     },
@@ -100,12 +145,19 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
       try {
         let resp = await api.get("/Municipios/MunicipiosNayarit");
         let { data } = resp.data;
-        this.list_Municipios = data.map((municipio) => {
+        let listMunicipios = data.map((municipio) => {
           return {
             value: municipio.id,
             label: municipio.nombre,
           };
         });
+        if (encryptStorage.decrypt("oficina_Letra") != "CME central IEEN") {
+          this.list_Municipios = listMunicipios.filter(
+            (x) => x.label === encryptStorage.decrypt("municipio")
+          );
+        } else {
+          this.list_Municipios = listMunicipios;
+        }
       } catch (error) {
         return {
           success: false,
@@ -140,13 +192,66 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
       try {
         let resp = await api.get("/Distritos");
         let { data } = resp.data;
-        this.list_Distritos = data.map((distrito) => {
+        let listDistritos = data.map((distrito) => {
           return {
             id: distrito.id,
             no_Distrito: distrito.no_Distrito,
             nombre: distrito.nombre,
             integracion: distrito.integracion,
-            label: `${distrito.no_Distrito} - ${distrito.nombre}`,
+            label: distrito.no_Distrito,
+            value: distrito.id,
+            integracion: distrito.integracion,
+          };
+        });
+        if (encryptStorage.decrypt("oficina_Letra") != "CME central IEEN") {
+          this.list_Distritos = listDistritos.filter((x) =>
+            x.nombre.includes(encryptStorage.decrypt("municipio"))
+          );
+          if (this.list_Distritos.length == 0) {
+            this.list_Distritos = listDistritos.filter((x) =>
+              x.integracion.includes(encryptStorage.decrypt("municipio"))
+            );
+          }
+        } else {
+          this.list_Distritos = listDistritos;
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    //----------------------------------------------------------------------
+    //DISTRITOS BY MUNICIPIO
+    async loadDistritosByMunicipio(id) {
+      try {
+        let resp = await api.get(`/Distritos/GetListaByMunicipio/${id}`);
+        let { data } = resp.data;
+        this.list_Distritos_By_Municipio = data.map((distrito) => {
+          return {
+            label: distrito.label,
+            value: distrito.id,
+          };
+        });
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    //----------------------------------------------------------------------
+    //SECCIONES
+    async loadSecciones(id) {
+      try {
+        let resp = await api.get(`/Distritos/GetListaByMunicipio/${id}`);
+        let { data } = resp.data;
+        this.list_Distritos_By_Municipio = data.map((distrito) => {
+          return {
+            label: distrito.label,
             value: distrito.id,
           };
         });

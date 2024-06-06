@@ -13,8 +13,7 @@
         <div class="flotante">
           <div class="row bg-blue-grey-3 q-pl-md text-bold">
             <div class="text-h6">
-              Resultados de la sección {{ encabezado.seccion }} de la casilla
-              {{ encabezado.casilla }} de la elección a
+              Resultados voto anticipado de la elección a
               {{
                 encabezado.eleccion == "DIP"
                   ? "Diputaciones"
@@ -41,16 +40,9 @@
             />
           </div>
           <div class="row bg-blue-grey-3 q-pl-md text-bold text-h6">
-            Total de votos sistema: {{ resultados.encabezado.total_Sistema }}
+            Total de votos sistema: {{ totalVotos }}
           </div>
-          <q-banner
-            v-show="
-              resultados.encabezado.total_Sistema !=
-                resultados.encabezado.total_Votos ||
-              resultados.encabezado.total_Votos > resultados.boletas
-            "
-            class="bg-red"
-          >
+          <q-banner v-show="totalVotos > resultadosVA.boletas" class="bg-red">
             <template v-slot:avatar>
               <q-icon name="warning" color="white" />
             </template>
@@ -59,7 +51,7 @@
             </div>
           </q-banner>
         </div>
-        <q-card-section v-if="resultados.partidos.length > 0">
+        <q-card-section v-if="resultadosVA.partidos.length > 0">
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
           >
@@ -68,7 +60,7 @@
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
-              v-for="(partido, index) in resultados.partidos"
+              v-for="(partido, index) in resultadosVA.partidos"
               :key="partido"
               style="border-radius: 8px"
               class="my-card text-center no-box-shadow"
@@ -102,7 +94,7 @@
             </q-card>
           </div>
         </q-card-section>
-        <q-card-section v-if="resultados.coaliciones.length > 0">
+        <q-card-section v-if="resultadosVA.coaliciones.length > 0">
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
           >
@@ -111,7 +103,7 @@
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
-              v-for="(coalicion, index) in resultados.coaliciones"
+              v-for="(coalicion, index) in resultadosVA.coaliciones"
               :key="coalicion"
               style="border-radius: 8px"
               class="my-card text-center no-box-shadow"
@@ -175,15 +167,14 @@
                   :disable="visualizar"
                   class="text-h6"
                   v-model="
-                    resultados.encabezado.total_Votos_Candidatos_No_Registrados
+                    resultadosVA.encabezado
+                      .total_Votos_Candidatos_No_Registrados
                   "
                   mask="###"
                   :name="`myTextTotales1`"
                   dense
                   input-class="text-right"
                   @keydown.enter.prevent="getFocus(1, 'totales')"
-                  lazy-rules
-                  :rules="[(val) => !!val || 'Campo vacío']"
                 />
               </q-card-section>
             </q-card>
@@ -208,14 +199,12 @@
                 <q-input
                   :disable="visualizar"
                   class="text-h6"
-                  v-model="resultados.encabezado.total_Votos_Nulos"
+                  v-model="resultadosVA.encabezado.total_Votos_Nulos"
                   mask="###"
                   :name="`myTextTotales2`"
                   dense
                   input-class="text-right"
                   @keydown.enter.prevent="getFocus(2, 'totales')"
-                  lazy-rules
-                  :rules="[(val) => !!val || 'Campo vacío']"
                 />
               </q-card-section>
             </q-card>
@@ -240,14 +229,12 @@
                 <q-input
                   :disable="visualizar"
                   class="text-h6"
-                  v-model="resultados.encabezado.total_Votos"
+                  v-model="resultadosVA.encabezado.total_Votos"
                   mask="###"
                   :name="`myTextTotales3`"
                   dense
                   input-class="text-right"
                   @keydown.enter.prevent="getFocus(3, 'totales')"
-                  lazy-rules
-                  :rules="[(val) => !!val || 'Campo vacío']"
                 />
               </q-card-section>
             </q-card>
@@ -257,13 +244,24 @@
           <div class="col-12 justify-end">
             <div class="text-right q-gutter-xs">
               <q-btn
+                icon-right="cancel"
                 label="Cancelar"
                 color="red"
                 @click="actualizarModal(false)"
               />
               <q-btn
-                label="Solicitar corrección"
+                v-if="modulo == null ? false : modulo.registrar && !visualizar"
+                icon-right="check_circle"
+                label="Guardar"
                 type="submit"
+                color="secondary"
+                class="q-ml-sm"
+              />
+              <q-btn
+                icon-right="check_circle"
+                v-if="modulo == null ? false : modulo.registrar && visualizar"
+                label="Solicitar corrección"
+                @click="solicitarCorreccion"
                 color="secondary"
                 class="q-ml-sm"
               />
@@ -278,23 +276,169 @@
 <script setup>
 import { useQuasar, QSpinnerCube } from "quasar";
 import { storeToRefs } from "pinia";
-import { computed, ref, watchEffect } from "vue";
+import { computed, onBeforeMount, ref, watchEffect } from "vue";
 import { useVotoAnticipadoStore } from "src/stores/votoAnticipado-store";
+import { useSolicitudesStore } from "src/stores/solicitudes-store";
+import { useAuthStore } from "src/stores/auth-store";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
 
 const $q = useQuasar();
+const solicitudesStore = useSolicitudesStore();
 const votoAnticipadoStore = useVotoAnticipadoStore();
-const { modal, resultados, encabezado, visualizar } =
+const authStore = useAuthStore();
+const { modulo } = storeToRefs(authStore);
+const { modal, resultadosVA, encabezado, visualizar } =
   storeToRefs(votoAnticipadoStore);
-const visible = ref(false);
+const siglas = "SC-CAP-VA";
+const motivo = ref(null);
+const totalVotos = ref(0);
 
 //----------------------------------------------------------
 
+onBeforeMount(() => {
+  leerPermisos();
+});
+
+//----------------------------------------------------------
+
+watchEffect(() => {
+  let total = 0;
+  for (let partido of resultadosVA.value.partidos) {
+    if (partido.votos == "" || partido.votos == NaN) {
+      partido.votos = 0;
+    }
+    total += parseInt(partido.votos);
+  }
+  for (let coalicion of resultadosVA.value.coaliciones) {
+    if (coalicion.votos == "" || coalicion.votos == NaN) {
+      coalicion.votos = 0;
+    }
+    total += parseInt(coalicion.votos);
+  }
+  if (
+    resultadosVA.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
+  ) {
+    total += parseInt(
+      resultadosVA.value.encabezado.total_Votos_Candidatos_No_Registrados
+    );
+  }
+  if (resultadosVA.value.encabezado.total_Votos_Nulos !== "") {
+    total += parseInt(resultadosVA.value.encabezado.total_Votos_Nulos);
+  }
+  totalVotos.value = total;
+});
+//----------------------------------------------------------
+
+const leerPermisos = async () => {
+  $q.loading.show();
+  await authStore.loadModulo(siglas);
+  $q.loading.hide();
+};
+
 const actualizarModal = (valor) => {
+  motivo.value = null;
   votoAnticipadoStore.initResultado();
+  votoAnticipadoStore.initEncabezado();
+  votoAnticipadoStore.actualizarVisualizar(false);
   votoAnticipadoStore.actualizarModal(valor);
+};
+
+function getFocus(index, tipo) {
+  let elementosPartidos = resultadosVA.value.partidos.length;
+  let elementosCoaliciones = resultadosVA.value.coaliciones.length;
+  if (tipo == "coalicion") {
+    if (elementosCoaliciones == index + 1) {
+      let docu = document.getElementsByName(`myTextTotales1`);
+      docu[0].focus();
+      docu[0].select();
+    } else {
+      let docu = document.getElementsByName(`myTextCoalicion${index + 1}`);
+      docu[0].focus();
+      docu[0].select();
+    }
+  } else if (tipo == "partido") {
+    if (elementosPartidos == index + 1) {
+      let docu = document.getElementsByName(`myTextCoalicion0`);
+      docu[0].focus();
+      docu[0].select();
+    } else {
+      let docu = document.getElementsByName(`myText${index + 1}`);
+      docu[0].focus();
+      docu[0].select();
+    }
+  } else {
+    let docu = document.getElementsByName(`myTextTotales${index + 1}`);
+    docu[0].focus();
+    docu[0].select();
+  }
+}
+
+const solicitarCorreccion = async () => {
+  votoAnticipadoStore.actualizarModal(false);
+  Swal.fire({
+    title: "¿Está seguro de solicitar corrección?",
+    inputLabel: "Especifique motivo",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Sí, solicitar!",
+    cancelButtonText: "No, cancelar",
+    input: "text",
+    inputAttributes: {
+      autocapitalize: "off",
+    },
+    customClass: {
+      container: "my-swal",
+    },
+    inputValidator: (value) => {
+      return new Promise((resolve) => {
+        if (value != "") {
+          motivo.value = value;
+          resolve();
+        } else {
+          resolve("Campo vacio");
+        }
+      });
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      $q.loading.show({
+        spinner: QSpinnerCube,
+        spinnerColor: "blue-grey",
+        spinnerSize: 140,
+        backgroundColor: "purple-2",
+        message: "Espere un momento por favor...",
+        messageColor: "black",
+      });
+      let motivoObj = { motivo: motivo.value };
+      let resp = await solicitudesStore.solicitarCorreccion(
+        resultadosVA.value.encabezado.id,
+        "VA",
+        motivoObj
+      );
+      if (resp.success == true) {
+        Swal.fire({
+          title: "Correccion solicitada!",
+          text: "Su corrección ha sido solicitada",
+          icon: "success",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+        actualizarModal(false);
+      } else {
+        $q.loading.hide();
+        $q.notify({
+          position: "top-right",
+          type: "negative",
+          message: resp.data,
+        });
+      }
+      $q.loading.hide();
+    }
+  });
 };
 
 const onSubmit = async () => {
@@ -330,10 +474,10 @@ const onSubmit = async () => {
       if (result.isConfirmed) {
         $q.loading.show({
           spinner: QSpinnerCube,
-          spinnerColor: "pink",
+          spinnerColor: "blue-grey",
           spinnerSize: 140,
           backgroundColor: "purple-2",
-          message: "Espere un momento porfavor...",
+          message: "Espere un momento por favor...",
           messageColor: "black",
         });
         let motivoObj = { motivo: motivo.value };
@@ -347,7 +491,8 @@ const onSubmit = async () => {
             title: "Correccion solicitada!",
             text: "Su corrección ha sido solicitada",
             icon: "success",
-            cancelButtonText: "Cerrar",
+            showConfirmButton: false,
+            timer: 1500,
           });
         } else {
           $q.loading.hide();
@@ -365,7 +510,13 @@ const onSubmit = async () => {
     $q.dialog({
       title: "¿Esta seguro de enviar los resultados?",
       message: `<ul>
-      <li>Elección: ${encabezado.value.eleccion}</li>
+      <li>Elección: ${
+        encabezado.value.eleccion == "DIP"
+          ? "Diputaciones"
+          : encabezado.value.eleccion == "PYS"
+          ? "Presidencias y Sindicaturas"
+          : "Regidurías"
+      }</li>
       <li>Municipio: ${encabezado.value.municipio}</li>
       <li>Distrito: ${encabezado.value.distrito}</li>
       </ul>`,
@@ -375,46 +526,59 @@ const onSubmit = async () => {
       transitionShow: "scale",
       transitionHide: "scale",
       ok: {
-        color: "positive",
+        color: "secondary",
         label: "Sí, enviar!",
       },
       cancel: {
-        color: "negative",
+        color: "red",
         label: " No, Cancelar!",
       },
     }).onOk(async () => {
       let total = 0;
-      for (let partido of resultados.value.partidos) {
+      for (let partido of resultadosVA.value.partidos) {
+        if (partido.votos == "" || partido.votos == NaN) {
+          partido.votos = 0;
+        }
         total += parseInt(partido.votos);
       }
-      for (let coalicion of resultados.value.coaliciones) {
+      for (let coalicion of resultadosVA.value.coaliciones) {
+        if (coalicion.votos == "" || coalicion.votos == NaN) {
+          coalicion.votos = 0;
+        }
         total += parseInt(coalicion.votos);
       }
 
       total += parseInt(
-        resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
-          ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+        resultadosVA.value.encabezado.total_Votos_Candidatos_No_Registrados !=
+          ""
+          ? parseInt(
+              resultadosVA.value.encabezado
+                .total_Votos_Candidatos_No_Registrados
+            )
           : 0
       );
       total += parseInt(
-        resultados.value.encabezado.total_Votos_Nulos != ""
-          ? resultados.value.encabezado.total_Votos_Nulos
+        resultadosVA.value.encabezado.total_Votos_Nulos != ""
+          ? parseInt(resultadosVA.value.encabezado.total_Votos_Nulos)
           : 0
       );
 
-      resultados.value.encabezado.total_Sistema = parseInt(total);
-      resultados.value.encabezado.total_Votos = parseInt(
-        resultados.value.encabezado.total_Votos
+      resultadosVA.value.encabezado.total_Sistema = parseInt(
+        total == 0 ? totalVotos.value : total
+      );
+      resultadosVA.value.encabezado.total_Votos = parseInt(
+        resultadosVA.value.encabezado.total_Votos
       );
       $q.loading.show({
         spinner: QSpinnerCube,
-        spinnerColor: "pink",
+        spinnerColor: "blue-grey",
         spinnerSize: 140,
         backgroundColor: "purple-2",
         message: "Espere un momento por favor...",
         messageColor: "black",
       });
-      resp = await votoAnticipadoStore.createResultadosVA(resultados.value);
+
+      resp = await votoAnticipadoStore.createResultadosVA(resultadosVA.value);
       if (resp.success) {
         $q.loading.hide();
         Swal.fire({

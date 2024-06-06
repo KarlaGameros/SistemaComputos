@@ -36,7 +36,7 @@
         >
           <q-card-section>
             <q-avatar style="width: auto" square>
-              <img :src="partido.logo_Url" />
+              <img :src="partido.logo_Url" :alt="partido.partido" />
             </q-avatar>
             <div
               :class="
@@ -53,7 +53,7 @@
               disable
               filled
               dense
-              input-class="text-right text-bold text-subtitle1"
+              input-class="text-right text-bold text-subtitle1 "
               v-model="partido.votos"
             />
           </q-card-section>
@@ -66,7 +66,7 @@
         >
           <q-card-section>
             <q-avatar style="width: 134px; height: 32px" square>
-              <img :src="partido.logo_Url" />
+              <img :src="partido.logo_Url" :alt="partido.partido" />
             </q-avatar>
             <div
               :class="
@@ -176,7 +176,7 @@
         >
           <q-card-section>
             <q-avatar style="width: auto" square>
-              <img :src="partido.logo_Url" />
+              <img :src="partido.logo_Url" :alt="partido.partido" />
             </q-avatar>
             <div
               :class="
@@ -284,7 +284,7 @@
         >
           <q-card-section>
             <q-avatar style="width: 134px; height: 32px" square>
-              <img :src="partido.logo_Url" />
+              <img :src="partido.logo_Url" :alt="partido.partido" />
             </q-avatar>
             <div
               :class="
@@ -314,7 +314,7 @@
         >
           <q-card-section>
             <q-avatar style="width: auto" square>
-              <img :src="partido.logo_Url" />
+              <img :src="partido.logo_Url" :alt="partido.partido" />
             </q-avatar>
             <div
               :class="
@@ -419,7 +419,7 @@
             <q-btn
               @click="descargarPdf(true)"
               label="Descargar PDF"
-              flat
+              outline
               class="q-ml-sm"
               icon="picture_as_pdf"
             />
@@ -443,7 +443,9 @@ onMounted(() => {
   consulta.value = false;
 });
 
-const descargarPdf = (valor) => {
+const descargarPdf = async (valor) => {
+  await consultaStore.loadIntegracionPartidosPoliticos();
+  await consultaStore.loadIntegracionConsejerias();
   consultaStore.actualizarModalIntegracion(valor);
 };
 </script>

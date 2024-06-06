@@ -6,10 +6,15 @@ export const useCapturaStore = defineStore("useCapturaStore", {
     modal: false,
     modalCausales: false,
     loading: false,
+    loadFiltros: false,
     pendientes_cotejo: [],
+    pendientes_cotejo_filtro: [],
     pendientes_recuento: [],
+    pendientes_recuento_filtro: [],
     pendientes_cotejo_rp: [],
+    pendientes_cotejo_rp_filtro: [],
     pendientes_recuento_rp: [],
+    pendientes_recuento_rp_filtro: [],
     encabezado: {
       rp: false,
       distrito: null,
@@ -55,6 +60,20 @@ export const useCapturaStore = defineStore("useCapturaStore", {
     },
   }),
   actions: {
+    cargarFiltrosTabla(valor) {
+      this.loadFiltros = valor;
+    },
+
+    intiEncabezado() {
+      this.encabezado.rp = false;
+      this.encabezado.distrito = null;
+      this.encabezado.municipio = null;
+      this.encabezado.demarcacion = null;
+      this.encabezado.seccion = null;
+      this.encabezado.casilla = null;
+      this.encabezado.eleccion = null;
+    },
+
     initResultados() {
       this.resultados.boletas = null;
       this.resultados.encabezado.id = null;
@@ -96,6 +115,7 @@ export const useCapturaStore = defineStore("useCapturaStore", {
     async load_cotejo(tipo_eleccion_id) {
       try {
         this.pendientes_cotejo = [];
+        this.pendientes_cotejo_filtro = [];
         this.loading = true;
         const resp = await api.get(
           `/ResultadoComputos/Cotejo/${tipo_eleccion_id}`
@@ -115,10 +135,10 @@ export const useCapturaStore = defineStore("useCapturaStore", {
                 total_Causales: element.total_Causales,
               };
             });
+            this.pendientes_cotejo_filtro = this.pendientes_cotejo;
           }
         }
       } catch (error) {
-        console.error(error);
         return {
           success: false,
           data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
@@ -132,6 +152,7 @@ export const useCapturaStore = defineStore("useCapturaStore", {
     async load_recuento(tipo_eleccion_id) {
       try {
         this.pendientes_recuento = [];
+        this.pendientes_recuento_filtro = [];
         this.loading = true;
         const resp = await api.get(
           `/ResultadoComputos/Recuento/${tipo_eleccion_id}`
@@ -151,10 +172,10 @@ export const useCapturaStore = defineStore("useCapturaStore", {
                 total_Causales: element.total_Causales,
               };
             });
+            this.pendientes_recuento_filtro = this.pendientes_recuento;
           }
         }
       } catch (error) {
-        console.error(error);
         return {
           success: false,
           data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
@@ -168,6 +189,7 @@ export const useCapturaStore = defineStore("useCapturaStore", {
     async load_cotejo_rp(tipo_eleccion_id) {
       try {
         this.pendientes_cotejo_rp = [];
+        this.pendientes_cotejo_rp_filtro = [];
         this.loading_table = true;
         const resp = await api.get(
           `/ResultadoComputos/CotejoRP/${tipo_eleccion_id}`
@@ -187,10 +209,10 @@ export const useCapturaStore = defineStore("useCapturaStore", {
                 total_Causales: element.total_Causales,
               };
             });
+            this.pendientes_cotejo_rp_filtro = this.pendientes_cotejo_rp;
           }
         }
       } catch (error) {
-        console.error(error);
         return {
           success: false,
           data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
@@ -204,6 +226,7 @@ export const useCapturaStore = defineStore("useCapturaStore", {
     async load_recuento_rp(tipo_eleccion_id) {
       try {
         this.pendientes_recuento_rp = [];
+        this.pendientes_recuento_rp_filtro = [];
         this.loading = true;
         const resp = await api.get(
           `/ResultadoComputos/RecuentoRP/${tipo_eleccion_id}`
@@ -223,10 +246,10 @@ export const useCapturaStore = defineStore("useCapturaStore", {
                 total_Causales: element.total_Causales,
               };
             });
+            this.pendientes_recuento_rp_filtro = this.pendientes_recuento_rp;
           }
         }
       } catch (error) {
-        console.error(error);
         return {
           success: false,
           data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
@@ -253,6 +276,8 @@ export const useCapturaStore = defineStore("useCapturaStore", {
         if (resp.status == 200) {
           const { success, data, boletas } = resp.data;
           if (success) {
+            this.resultados.encabezado.votos_Reservados =
+              parseInt(votos_reservados);
             this.resultados.boletas = boletas;
             this.resultados.encabezado.id = data.encabezado.id;
             this.resultados.encabezado.grupo_Trabajo =
@@ -265,8 +290,6 @@ export const useCapturaStore = defineStore("useCapturaStore", {
               data.encabezado.total_Votos;
             this.resultados.encabezado.total_Votos_Candidatos_No_Registrados =
               data.encabezado.total_Votos_Candidatos_No_Registrados;
-            this.resultados.encabezado.total_Votos_Nulos =
-              data.encabezado.total_Votos_Nulos;
             this.resultados.encabezado.total_Votos_Nulos =
               data.encabezado.total_Votos_Nulos;
 
@@ -371,81 +394,6 @@ export const useCapturaStore = defineStore("useCapturaStore", {
       }
     },
 
-    //--------------------------------------------------------------
-    async incicializar_resultados_va(
-      Voto_Anticipado_Id,
-      Tipo_Computo,
-      Grupo_Trabajo,
-      Punto_Recuento,
-      Votos_Reservados
-    ) {
-      try {
-        const resp = await api.get(
-          `/ResultadoComputosVa/Inicializar?Voto_Anticipado_Id=${Voto_Anticipado_Id}&Tipo_Computo=${Tipo_Computo}&Grupo_Trabajo=${Grupo_Trabajo}&Punto_Recuento=${Punto_Recuento}&Votos_Reservados=${Votos_Reservados}`
-        );
-        if (resp.status == 200) {
-          const { success, data } = resp.data;
-          if (success) {
-            this.resultados.voto_Anticipado_Id = data.voto_Anticipado_Id;
-            this.resultados.encabezado.id = data.encabezado.id;
-            this.resultados.encabezado.grupo_Trabajo =
-              data.encabezado.grupo_Trabajo;
-            this.resultados.encabezado.punto_Recuento =
-              data.encabezado.punto_Recuento;
-            this.resultados.encabezado.total_Sistema =
-              data.encabezado.total_Sistema;
-            this.resultados.encabezado.total_Votos =
-              data.encabezado.total_Votos;
-            this.resultados.encabezado.total_Votos_Candidatos_No_Registrados =
-              data.encabezado.total_Votos_Candidatos_No_Registrados;
-            this.resultados.encabezado.total_Votos_Nulos =
-              data.encabezado.total_Votos_Nulos;
-            this.resultados.encabezado.total_Votos_Nulos =
-              data.encabezado.total_Votos_Nulos;
-
-            if (data.partidos.length > 0) {
-              this.resultados.partidos = data.partidos.map((element) => {
-                return {
-                  id: element.id,
-                  coalicion: element.coalicion,
-                  coalicion_Id: element.coalicion_Id,
-                  combinacion: element.combinacion,
-                  combinacion_Id: element.combinacion_Id,
-                  partido: element.partido,
-                  partido_Id: element.partido_Id,
-                  resultado_Id: element.resultado_Id,
-                  voto_Valido: element.voto_Valido,
-                  votos: element.votos,
-                  logo_Url: element.logo_Url,
-                };
-              });
-            }
-            if (data.coaliciones.length > 0) {
-              this.resultados.coaliciones = data.coaliciones.map((element) => {
-                return {
-                  id: element.id,
-                  coalicion: element.coalicion,
-                  coalicion_Id: element.coalicion_Id,
-                  combinacion: element.combinacion,
-                  combinacion_Id: element.combinacion_Id,
-                  partido: element.partido,
-                  partido_Id: element.partido_Id,
-                  resultado_Id: element.resultado_Id,
-                  voto_Valido: element.voto_Valido,
-                  votos: element.votos,
-                  logo_Url: element.logo_Url,
-                };
-              });
-            }
-          }
-        }
-      } catch (error) {
-        return {
-          success: false,
-          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
-        };
-      }
-    },
     //-----------------------------------------------------------
     async load_causales_by_casilla(eleccion_id, casilla_id) {
       try {
@@ -523,7 +471,10 @@ export const useCapturaStore = defineStore("useCapturaStore", {
           }
         }
       } catch (error) {
-        console.error(error);
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
       }
     },
 

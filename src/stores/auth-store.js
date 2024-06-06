@@ -14,11 +14,9 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     async loadSistemas() {
       try {
-        console.log("---entro");
         const resp = await api.get(`/SistemasUsuarios/ByUSuario`);
         if (resp.status == 200) {
           const { success, data } = resp.data;
-          console.log("---", data);
           if (success === true) {
             if (data) {
               const sistemasArray = data.map((sistema) => {
@@ -131,10 +129,11 @@ export const useAuthStore = defineStore("auth", {
       try {
         const resp = await api.get("/SistemasUsuarios/ByUSuario");
         let { data } = resp.data;
+
         let filtro = data.find(
-          (x) => x.sistema_Id == parseInt(localStorage.getItem("sistema"))
+          (x) => x.sistema_Id == parseInt(encryptStorage.decrypt("sistema"))
         );
-        localStorage.setItem("perfil", filtro.perfil_Id);
+        encryptStorage.encrypt("perfil", filtro.perfil);
       } catch (error) {
         return {
           success: false,
@@ -148,7 +147,22 @@ export const useAuthStore = defineStore("auth", {
         const resp = await api.get("/Oficinas/GetUsuario");
         let { data } = resp.data;
         this.usuario_Nombre = data.nombre_Completo;
-        localStorage.setItem("oficina_Id", data.oficina_Id);
+        encryptStorage.encrypt("municipio", data.municipio);
+        encryptStorage.encrypt("oficina_Id", data.oficina_Id);
+        encryptStorage.encrypt("oficina_Letra", data.nombre_Oficina);
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    async loadOficina() {
+      try {
+        const resp = await api.get("/Oficinas/GetOficina");
+        let { data } = resp.data;
+        encryptStorage.encrypt("municipio_Id", data.municipio_Id);
       } catch (error) {
         return {
           success: false,

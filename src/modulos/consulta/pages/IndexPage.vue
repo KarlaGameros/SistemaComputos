@@ -1,7 +1,7 @@
 <template>
   <q-page>
     <div :class="$q.dark.isActive ? 'row' : 'row bg-white'">
-      <div class="col-10">
+      <div class="col-9">
         <div class="q-pa-md q-gutter-sm">
           <div class="text-blue-grey-5 text-h6">Reporte de resultados</div>
           <q-breadcrumbs>
@@ -16,8 +16,8 @@
           </q-breadcrumbs>
         </div>
       </div>
-      <div class="col-2">
-        <div class="q-pt-lg">
+      <div class="col-3">
+        <div class="q-pt-lg q-pr-sm q-pb-sm">
           <q-btn
             @click="actualizarModal(true)"
             color="blue-grey-5"

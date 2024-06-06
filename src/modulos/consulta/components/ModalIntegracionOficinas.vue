@@ -56,7 +56,7 @@
                       :icon="
                         props.row.presente == true ? 'check_circle' : 'cancel'
                       "
-                      @click="props.row.presente = !props.row.presente"
+                      @click="presente(props.row)"
                     />
                   </div>
                   <div v-else-if="col.name === 'logo_Partido'">
@@ -88,7 +88,10 @@
               @click="actualizarModalPartidos(true)"
             />
           </div>
-          <div v-for="partido in list_Integracion_Partidos" :key="partido">
+          <div
+            v-for="partido in list_Integracion_Partidos_Guardar"
+            :key="partido"
+          >
             <q-avatar
               v-if="partido.presente_Propietario || partido.presente_Suplente"
               square
@@ -111,9 +114,9 @@
                 @click="actualizarModal(false)"
               />
               <q-btn
-                icon-right="save"
+                icon-right="download"
                 type="submit"
-                label="Guardar"
+                label="Generar acta"
                 color="secondary"
                 class="q-ml-sm"
               />
@@ -128,17 +131,27 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import { useQuasar, QSpinnerCube } from "quasar";
+import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { useConsultaStore } from "src/stores/consulta-store";
 import { onBeforeMount, ref } from "vue";
+import { EncryptStorage } from "storage-encryption";
 
 //-----------------------------------------------------------
 
 const $q = useQuasar();
 const consultaStore = useConsultaStore();
+const configuracionStore = useConfiguracionStore();
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const {
   modalIntegracion,
   list_Integracion_Partidos,
+  list_Integracion_Partidos_Guardar,
   list_Integracion_Consejerias,
+  tipo_Eleccion,
+  distrito_Id,
+  municipio_Id,
+  demarcacion_Id,
+  tipo_Candidatura,
 } = storeToRefs(consultaStore);
 
 //-----------------------------------------------------------
@@ -149,22 +162,47 @@ onBeforeMount(() => {
 
 //-----------------------------------------------------------
 
+const presente = async (row) => {
+  let resp = await consultaStore.integracionPresente(
+    row.id,
+    (row.presente = !row.presente)
+  );
+  if (resp.success == true) {
+    $q.notify({
+      position: "top-right",
+      type: "positive",
+      message: resp.data,
+    });
+    await consultaStore.loadIntegracionConsejerias();
+  } else {
+    $q.notify({
+      position: "top-right",
+      type: "negative",
+      message: resp.data,
+    });
+  }
+};
+
 const cargarData = async () => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
-    backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
+    backgroundColor: "blue-grey",
+    message: "Espere un momento por favor...",
     messageColor: "black",
   });
+  await configuracionStore.loadPartidosPoliticos();
   await consultaStore.loadIntegracionConsejerias();
-  await consultaStore.loadIntegracionPartidosPoliticos();
   consultaStore.actualizarModal(true);
   $q.loading.hide();
 };
 
-const actualizarModal = (valor) => {
+const actualizarModal = async (valor) => {
+  list_Integracion_Consejerias.value = [];
+  list_Integracion_Partidos_Guardar.value = [];
+  list_Integracion_Partidos.value = [];
+  await consultaStore.loadIntegracionPartidosPoliticos();
   consultaStore.actualizarModalIntegracion(valor);
 };
 
@@ -172,7 +210,86 @@ const actualizarModalPartidos = (valor) => {
   consultaStore.actualizarModalPartidos(valor);
 };
 
-const onSubmit = () => {};
+const onSubmit = async () => {
+  $q.loading.show({
+    spinner: QSpinnerCube,
+    spinnerColor: "blue-grey",
+    spinnerSize: 140,
+    backgroundColor: "purple-2",
+    message: "Espere un momento porfavor...",
+    messageColor: "black",
+  });
+  if (tipo_Candidatura.value == "MR" || tipo_Eleccion.value.siglas == "PYS") {
+    let resp = await consultaStore.downloadActa(
+      tipo_Eleccion.value.siglas,
+      tipo_Eleccion.value.id,
+      distrito_Id.value,
+      encryptStorage.decrypt("oficina_Letra") == "CME central IEEN"
+        ? municipio_Id.value
+        : encryptStorage.decrypt("municipio_Id"),
+      demarcacion_Id.value
+    );
+    if (resp.success == true) {
+      const link = document.createElement("a");
+      link.href = consultaStore.documentoActa;
+      link.setAttribute(
+        "download",
+        `${tipo_Eleccion.value.siglas}_${
+          tipo_Eleccion.value.siglas == "DIP"
+            ? distrito_Id.value.label
+            : tipo_Eleccion.value.siglas == "PYS"
+            ? municipio_Id.value.label
+            : `${municipio_Id.value.label}_${demarcacion_Id.value.label}`
+        }.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+    } else {
+      $q.notify({
+        position: "top-right",
+        type: "negative",
+        message: resp.data,
+      });
+    }
+  } else {
+    let resp = null;
+    if (tipo_Eleccion.value.siglas != "DIP") {
+      resp = await consultaStore.downloadActaRP(
+        tipo_Eleccion.value.siglas,
+        tipo_Eleccion.value.id,
+        municipio_Id.value,
+        distrito_Id.value
+      );
+    } else {
+      resp = await consultaStore.downloadActaRP(
+        tipo_Eleccion.value.siglas,
+        tipo_Eleccion.value.id,
+        encryptStorage.decrypt("municipio_Id"),
+        distrito_Id.value
+      );
+    }
+    if (resp.success == true) {
+      const link = document.createElement("a");
+      link.href = consultaStore.documentoActa;
+      link.setAttribute(
+        "download",
+        `RP_${tipo_Eleccion.value.siglas}_${encryptStorage.decrypt(
+          "oficina_Letra"
+        )}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+    } else {
+      $q.notify({
+        position: "top-right",
+        type: "negative",
+        message: resp.data,
+      });
+    }
+  }
+
+  $q.loading.hide();
+};
 
 const columns = [
   {

@@ -44,7 +44,7 @@
             />
           </div>
           <div
-            class="col-4 q-pr-sm"
+            class="col-2 q-pr-sm"
             v-if="eleccion == 'PYS' || eleccion == 'REG'"
           >
             <q-select
@@ -55,7 +55,7 @@
               label="Seleccione municipio"
             />
           </div>
-          <div class="col-4 q-pr-sm" v-if="eleccion == 'REG' && tab == 'MR'">
+          <div class="col-2 q-pr-sm" v-if="eleccion == 'REG' && tab == 'MR'">
             <q-select
               dense
               outlined
@@ -65,11 +65,11 @@
             />
           </div>
           <q-btn
-            v-if="tab == 'MR'"
+            v-if="tab == 'MR' || eleccion == 'REG'"
             :disable="
               eleccion == 'DIP'
                 ? distrito_Id == null
-                : eleccion == 'REG'
+                : eleccion == 'REG' && tab == 'MR'
                 ? municipio_Id == null || demarcacion_Id == null
                 : eleccion == 'PYS'
                 ? municipio_Id == null
@@ -83,6 +83,62 @@
             color="secondary"
             icon="bar_chart"
             label="Generar"
+          />
+
+          <q-select
+            v-if="tab == 'RP'"
+            :disable="eleccion == 'REG' && municipio_Id == null"
+            class="col-3"
+            dense
+            outlined
+            v-model="partido_Id"
+            :options="list_Partidos_Politicos"
+            label="Seleccione partido"
+          >
+            <template v-slot:option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section avatar v-if="scope.opt.logo_URL != null">
+                  <q-img :src="scope.opt.logo_URL" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>{{ scope.opt.label }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </template></q-select
+          >
+          <q-select
+            class="col-3"
+            v-if="tab == 'RP'"
+            dense
+            outlined
+            v-model="candidato_Id"
+            :options="list_Candidatos_By_Partido"
+            label="Seleccione la candidatura"
+            lazy-rules
+            :rules="[(val) => !!val || 'La candidatura es requerida']"
+          />
+
+          <q-btn
+            :disable="
+              (eleccion != 'REG' &&
+                tab == 'MR' &&
+                datos_grafica.ganador_Id == null) ||
+              (eleccion == 'DIP' &&
+                tab == 'RP' &&
+                (partido_Id == null || candidato_Id == null)) ||
+              (eleccion == 'REG' &&
+                tab == 'MR' &&
+                datos_grafica.ganador_Id == null) ||
+              (eleccion == 'REG' &&
+                tab == 'RP' &&
+                (municipio_Id == null ||
+                  partido_Id == null ||
+                  candidato_Id == null))
+            "
+            icon="download"
+            @click="generarConstancia"
+            class="bg-pink-ieen"
+            label="Descargar constancia"
           />
         </q-card-section>
         <q-card-section v-if="datos_grafica.primero != null">
@@ -161,10 +217,13 @@ import { onBeforeMount, ref, watch } from "vue";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
 import { useMayoriaStore } from "src/stores/mayoria-store";
+import { EncryptStorage } from "storage-encryption";
+import { useQuasar, QSpinnerCube } from "quasar";
 import chartMayoria from "src/charts/chartMayoria.vue";
 
 //-----------------------------------------------------------
 
+const $q = useQuasar();
 const configuracionStore = useConfiguracionStore();
 const mayoriaStore = useMayoriaStore();
 const { datos_grafica } = storeToRefs(mayoriaStore);
@@ -173,7 +232,10 @@ const {
   list_Municipios,
   list_Distritos,
   list_Demarcaciones,
+  list_Partidos_Politicos,
+  list_Candidatos_By_Partido,
 } = storeToRefs(configuracionStore);
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const eleccion = ref("DIP");
 const tipo_eleccion_id = ref(null);
 const distrito_Id = ref(null);
@@ -181,6 +243,9 @@ const municipio_Id = ref(null);
 const demarcacion_Id = ref(null);
 const tab = ref("MR");
 const loading = ref(false);
+const oficina = encryptStorage.decrypt("oficina_Letra");
+const candidato_Id = ref(null);
+const partido_Id = ref(null);
 
 //-----------------------------------------------------------
 
@@ -190,26 +255,58 @@ onBeforeMount(() => {
   cargarData();
 });
 
+watch(partido_Id, async (val) => {
+  if (val != null && tab.value == "RP" && eleccion.value == "REG") {
+    $q.loading.show();
+    await configuracionStore.loadCandidatosByPartido(
+      val.value,
+      tipo_eleccion_id.value,
+      municipio_Id.value.value
+    );
+    candidato_Id.value = null;
+    $q.loading.hide();
+  }
+  if (val != null && tab.value == "RP" && eleccion.value == "DIP") {
+    $q.loading.show();
+    await configuracionStore.loadCandidatosByPartido(
+      val.value,
+      tipo_eleccion_id.value,
+      null
+    );
+    candidato_Id.value = null;
+    $q.loading.hide();
+  }
+});
+
 watch(municipio_Id, (val) => {
   if (val != null && eleccion.value == "REG") {
+    demarcacion_Id.value = null;
+    partido_Id.value = null;
+    candidato_Id.value = null;
     configuracionStore.loadDemarcaciones(val.value);
   }
 });
 
 watch(eleccion, (val) => {
   if (val != null) {
+    partido_Id.value = null;
+    candidato_Id.value = null;
     tab.value = "MR";
     limpiarFiltro();
   }
 });
 
-watch(tab, (val) => {
+watch(tab, async (val) => {
   if (val != null) {
+    $q.loading.show();
+    partido_Id.value = null;
+    candidato_Id.value = null;
     mayoriaStore.initGrafica();
     limpiarFiltro();
     if (val == "RP" && eleccion.value == "DIP") {
-      mayoriaStore.cosultaResultadosRP(tipo_eleccion_id.value);
+      await mayoriaStore.cosultaResultadosRP(tipo_eleccion_id.value);
     }
+    $q.loading.hide();
   }
 });
 
@@ -222,7 +319,8 @@ watch(list_Tipo_Elecciones, (val) => {
 //-----------------------------------------------------------
 
 const generar = async () => {
-  loading.value = true;
+  $q.loading.show();
+
   if (eleccion.value == "DIP") {
     if (tab.value == "MR") {
       await mayoriaStore.cosultaResultadosMr(
@@ -251,9 +349,60 @@ const generar = async () => {
       );
     }
   }
-  setTimeout(() => {
-    loading.value = false;
-  }, 3000);
+  $q.loading.hide();
+};
+
+const generarConstancia = async () => {
+  if (
+    tab.value == "RP" &&
+    eleccion.value == "REG" &&
+    candidato_Id.value == null
+  ) {
+    $q.dialog({
+      title: "Atención",
+      message: "Deberá seleccionar una candidatura",
+      icon: "Warning",
+      persistent: true,
+      transitionShow: "scale",
+      transitionHide: "scale",
+      ok: false,
+      cancel: {
+        color: "negative",
+        label: "Regresar",
+      },
+    });
+  } else {
+    $q.loading.show({
+      spinner: QSpinnerCube,
+      spinnerColor: "blue-grey",
+      spinnerSize: 140,
+      backgroundColor: "purple-2",
+      message: "Espere un momento porfavor...",
+      messageColor: "black",
+    });
+    let resp = null;
+    if (tab.value == "MR") {
+      resp = await mayoriaStore.generarConstancia(
+        datos_grafica.value.ganador_Id
+      );
+    } else {
+      resp = await mayoriaStore.generarConstancia(candidato_Id.value.value);
+    }
+    if (resp.success == true) {
+      const link = document.createElement("a");
+      link.href = mayoriaStore.ganadorPDF;
+      link.setAttribute("download", `Constancia.pdf`);
+      document.body.appendChild(link);
+      link.click();
+    } else {
+      $q.notify({
+        position: "top-right",
+        type: "negative",
+        message: resp.data,
+      });
+    }
+    $q.loading.hide();
+  }
 };
 
 const limpiarFiltro = () => {

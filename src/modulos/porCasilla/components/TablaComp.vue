@@ -46,14 +46,40 @@
             <q-tab-panel name="MR">
               <q-table
                 :loading="loading"
-                :rows="list_por_casilla"
+                :rows="list_por_casilla_filtro"
                 :columns="columns"
                 :filter="filter"
                 :visible-columns="visible_columns"
                 row-key="name"
                 v-model:pagination="pagination"
                 color="pink"
+                :rows-per-page-options="[5, 10, 15, 20, 25, 30, 50]"
               >
+                <template v-slot:header-cell="props">
+                  <q-th :props="props">
+                    <q-input
+                      v-if="
+                        props.col.name != 'id' &&
+                        props.col.name != 'total_Sistema' &&
+                        props.col.name != 'total_Capturado' &&
+                        props.col.name != 'boletas' &&
+                        props.col.name != 'usuario'
+                      "
+                      @keydown.enter.prevent="
+                        filteredRows(
+                          props.col.name,
+                          columnFilters[props.col.name]
+                        )
+                      "
+                      filled
+                      dense
+                      debounce="300"
+                      v-model="columnFilters[props.col.name]"
+                      placeholder="Buscar"
+                    />
+                    {{ props.col.label }}
+                  </q-th>
+                </template>
                 <template v-slot:top-right>
                   <q-input
                     borderless
@@ -72,7 +98,9 @@
                     :props="props"
                     :class="
                       props.row.total_Sistema != props.row.total_Capturado ||
-                      props.row.total_Capturado > props.row.boletas
+                      props.row.total_Capturado > props.row.boletas ||
+                      (props.row.total_Sistema == 0 &&
+                        props.row.total_Capturado == 0)
                         ? 'bg-red text-white'
                         : ''
                     "
@@ -110,14 +138,40 @@
             <q-tab-panel name="RP">
               <q-table
                 :loading="loading"
-                :rows="list_por_casilla_rp"
+                :rows="list_por_casilla_rp_filtro"
                 :columns="columns"
                 :filter="filter"
                 row-key="name"
                 :visible-columns="visible_columns"
                 v-model:pagination="pagination"
                 color="pink"
+                :rows-per-page-options="[5, 10, 15, 20, 25, 30, 50]"
               >
+                <template v-slot:header-cell="props">
+                  <q-th :props="props">
+                    <q-input
+                      v-if="
+                        props.col.name != 'id' &&
+                        props.col.name != 'total_Sistema' &&
+                        props.col.name != 'total_Capturado' &&
+                        props.col.name != 'boletas' &&
+                        props.col.name != 'usuario'
+                      "
+                      @keydown.enter.prevent="
+                        filteredRows(
+                          props.col.name,
+                          columnFilters[props.col.name]
+                        )
+                      "
+                      filled
+                      dense
+                      debounce="300"
+                      v-model="columnFilters[props.col.name]"
+                      placeholder="Buscar"
+                    />
+                    {{ props.col.label }}
+                  </q-th>
+                </template>
                 <template v-slot:top-right>
                   <q-input
                     borderless
@@ -136,7 +190,9 @@
                     :props="props"
                     :class="
                       props.row.total_Sistema != props.row.total_Capturado ||
-                      props.row.total_Capturado > props.row.boletas
+                      props.row.total_Capturado > props.row.boletas ||
+                      (props.row.total_Sistema == 0 &&
+                        props.row.total_Capturado == 0)
                         ? 'bg-red text-white'
                         : ''
                     "
@@ -174,12 +230,16 @@
         </q-card>
       </div>
     </div>
-    <ModalComp :rp="tab == 'RP' ? true : false" :eleccion="eleccion" />
+    <ModalComp
+      :eleccion_Id="eleccion_Id"
+      :rp="tab == 'RP' ? true : false"
+      :eleccion="eleccion"
+    />
   </template>
 </template>
 
 <script setup>
-import { onBeforeMount, ref } from "vue";
+import { onBeforeMount, ref, watch } from "vue";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "src/stores/auth-store";
@@ -194,7 +254,12 @@ const casillaStore = useCasillaStore();
 const configuracionStore = useConfiguracionStore();
 const authStore = useAuthStore();
 const { modulo } = storeToRefs(authStore);
-const { list_por_casilla, list_por_casilla_rp } = storeToRefs(casillaStore);
+const {
+  list_por_casilla,
+  list_por_casilla_filtro,
+  list_por_casilla_rp,
+  list_por_casilla_rp_filtro,
+} = storeToRefs(casillaStore);
 const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
 const eleccion = ref("DIP");
 const eleccion_Id = ref(null);
@@ -211,13 +276,268 @@ const visible_columns = ref([
   "total_Capturado",
   "id",
 ]);
+const columnFilters = ref({});
+
 //-----------------------------------------------------------
 
 onBeforeMount(() => {
   cargarData();
 });
 
+watch(tab, (val) => {
+  if (val != null) {
+    columnFilters.value = {};
+    pagination.value = {
+      sortBy: "desc",
+      descending: false,
+      page: 1,
+      rowsPerPage: 5,
+    };
+  }
+});
+
 //-----------------------------------------------------------
+
+const filteredRows = () => {
+  loading.value = true;
+  if (tab.value == "MR") {
+    list_por_casilla_filtro.value = list_por_casilla.value.filter((item) => {
+      let cumple = true;
+      if (columnFilters.value["municipio"] !== undefined) {
+        if (columnFilters.value["municipio"] == "") {
+          cumple = cumple && item.municipio === item.municipio;
+        } else {
+          let municipio = item.municipio.toUpperCase();
+          cumple =
+            cumple &&
+            municipio.includes(columnFilters.value["municipio"].toUpperCase());
+        }
+      }
+      if (columnFilters.value["distrito"] !== undefined) {
+        if (columnFilters.value["distrito"] == "") {
+          cumple = cumple && item.distrito === item.distrito;
+        } else {
+          cumple = cumple && item.distrito === columnFilters.value["distrito"];
+        }
+      }
+      if (columnFilters.value["seccion"] !== undefined) {
+        if (columnFilters.value["seccion"] == "") {
+          cumple = cumple && item.seccion === item.seccion;
+        } else {
+          cumple =
+            cumple && item.seccion.includes(columnFilters.value["seccion"]);
+        }
+      }
+      if (columnFilters.value["casilla"] !== undefined) {
+        if (columnFilters.value["casilla"] == "") {
+          cumple = cumple && item.casilla === item.casilla;
+        } else {
+          var chars = {
+            á: "a",
+            é: "e",
+            í: "i",
+            ó: "o",
+            ú: "u",
+            à: "a",
+            è: "e",
+            ì: "i",
+            ò: "o",
+            ù: "u",
+            ñ: "n",
+            Á: "A",
+            É: "E",
+            Í: "I",
+            Ó: "O",
+            Ú: "U",
+            À: "A",
+            È: "E",
+            Ì: "I",
+            Ò: "O",
+            Ù: "U",
+            Ñ: "N",
+          };
+          var expr = /[áàéèíìóòúùñ]/gi;
+          var res = item.casilla.toUpperCase().replace(expr, function (e) {
+            return chars[e];
+          });
+          cumple =
+            cumple &&
+            res.includes(columnFilters.value["casilla"].toUpperCase());
+        }
+      }
+      if (columnFilters.value["tipo"] !== undefined) {
+        if (columnFilters.value["tipo"] == "") {
+          cumple = cumple && item.tipo === item.tipo;
+        } else {
+          let tipo = item.tipo.toUpperCase();
+          cumple =
+            cumple && tipo.includes(columnFilters.value["tipo"].toUpperCase());
+        }
+      }
+      if (columnFilters.value["demarcacion"] !== undefined) {
+        if (columnFilters.value["demarcacion"] == "") {
+          cumple = cumple && item.demarcacion === item.demarcacion;
+        } else {
+          var chars = {
+            á: "a",
+            é: "e",
+            í: "i",
+            ó: "o",
+            ú: "u",
+            à: "a",
+            è: "e",
+            ì: "i",
+            ò: "o",
+            ù: "u",
+            ñ: "n",
+            Á: "A",
+            É: "E",
+            Í: "I",
+            Ó: "O",
+            Ú: "U",
+            À: "A",
+            È: "E",
+            Ì: "I",
+            Ò: "O",
+            Ù: "U",
+            Ñ: "N",
+          };
+          var expr = /[áàéèíìóòúùñ]/gi;
+          var res = item.demarcacion.toUpperCase().replace(expr, function (e) {
+            return chars[e];
+          });
+          cumple =
+            cumple &&
+            res.includes(columnFilters.value["demarcacion"].toUpperCase());
+        }
+      }
+      return cumple;
+    });
+  } else if (tab.value == "RP") {
+    list_por_casilla_rp_filtro.value = list_por_casilla_rp.value.filter(
+      (item) => {
+        let cumple = true;
+
+        if (columnFilters.value["municipio"] !== undefined) {
+          if (columnFilters.value["municipio"] == "") {
+            cumple = cumple && item.municipio === item.municipio;
+          } else {
+            let municipio = item.municipio.toUpperCase();
+            cumple =
+              cumple &&
+              municipio.includes(
+                columnFilters.value["municipio"].toUpperCase()
+              );
+          }
+        }
+        if (columnFilters.value["distrito"] !== undefined) {
+          if (columnFilters.value["distrito"] == "") {
+            cumple = cumple && item.distrito === item.distrito;
+          } else {
+            cumple =
+              cumple && item.distrito === columnFilters.value["distrito"];
+          }
+        }
+        if (columnFilters.value["seccion"] !== undefined) {
+          if (columnFilters.value["seccion"] == "") {
+            cumple = cumple && item.seccion === item.seccion;
+          } else {
+            cumple =
+              cumple && item.seccion.includes(columnFilters.value["seccion"]);
+          }
+        }
+        if (columnFilters.value["casilla"] !== undefined) {
+          if (columnFilters.value["casilla"] == "") {
+            cumple = cumple && item.casilla === item.casilla;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.casilla.toUpperCase().replace(expr, function (e) {
+              return chars[e];
+            });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["casilla"].toUpperCase());
+          }
+        }
+        if (columnFilters.value["tipo"] !== undefined) {
+          if (columnFilters.value["tipo"] == " ") {
+            cumple = cumple && item.tipo === item.tipo;
+          } else {
+            let tipo = item.tipo.toUpperCase();
+            cumple =
+              cumple &&
+              tipo.includes(columnFilters.value["tipo"].toUpperCase());
+          }
+        }
+        if (columnFilters.value["demarcacion"] !== undefined) {
+          if (columnFilters.value["demarcacion"] == "") {
+            cumple = cumple && item.demarcacion === item.demarcacion;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.demarcacion
+              .toUpperCase()
+              .replace(expr, function (e) {
+                return chars[e];
+              });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["demarcacion"].toUpperCase());
+          }
+        }
+        return cumple;
+      }
+    );
+  }
+  loading.value = false;
+};
 
 const evalua_columnas = () => {
   switch (eleccion.value) {
@@ -272,6 +592,8 @@ const leerPermisos = async () => {
 };
 
 const set_tipo_eleccion = (tipo) => {
+  columnFilters.value = {};
+  loading.value = true;
   eleccion.value = tipo.siglas;
   eleccion_Id.value = tipo.id;
   tab.value = "MR";
@@ -286,12 +608,21 @@ const set_tipo_eleccion = (tipo) => {
       casillaStore.load_por_casilla(eleccion_Id.value);
       break;
   }
+  pagination.value = {
+    sortBy: "desc",
+    descending: false,
+    page: 1,
+    rowsPerPage: 5,
+  };
+  setTimeout(() => {
+    loading.value = false;
+  }, 500);
 };
 
 const cargarData = async () => {
+  loading.value = true;
   leerPermisos();
   evalua_columnas();
-  loading.value = true;
   await configuracionStore.loadTipoElecciones();
   eleccion_Id.value = list_Tipo_Elecciones.value[0].id;
   await configuracionStore.loadPartidosPoliticos();
@@ -304,10 +635,10 @@ const cargarData = async () => {
 const verResultados = async (row, tipo) => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
-    backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
+    backgroundColor: "blue-grey",
+    message: "Espere un momento por favor...",
     messageColor: "black",
   });
   await casillaStore.load_por_casilla_id(
@@ -318,7 +649,8 @@ const verResultados = async (row, tipo) => {
     row.casilla,
     row.tipo,
     tipo,
-    eleccion.value
+    eleccion.value,
+    row.demarcacion
   );
   casillaStore.initResultados();
   if (tipo == "MR") {
@@ -336,28 +668,28 @@ const columns = [
     align: "center",
     label: "Usuario",
     field: "usuario",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "municipio",
     align: "center",
     label: "Municipio",
     field: "municipio",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "demarcacion",
     align: "center",
     label: "Demarcación",
     field: "demarcacion",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "distrito",
     align: "center",
     label: "Distrito",
     field: "distrito",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "seccion",
@@ -371,42 +703,42 @@ const columns = [
     align: "center",
     label: "Casilla",
     field: "casilla",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "tipo",
     align: "center",
     label: "Tipo",
     field: "tipo",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "total_Sistema",
     align: "center",
     label: "Total sistema",
     field: "total_Sistema",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "total_Capturado",
     align: "center",
     label: "Total capturado",
     field: "total_Capturado",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "boletas",
     align: "center",
     label: "Total boletas",
     field: "boletas",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "id",
     align: "center",
     label: "Acciones",
     field: "id",
-    sortable: true,
+    sortable: false,
   },
 ];
 

@@ -5,7 +5,13 @@
     transition-show="scale"
     transition-hide="scale"
   >
-    <q-card style="width: 400px; max-width: 45vw">
+    <q-card
+      :style="
+        $q.screen.xs
+          ? 'width: 800px; max-width: 85vw'
+          : 'width: 400px; max-width: 45vw'
+      "
+    >
       <q-form @submit="consultar">
         <q-card-section class="row">
           <div class="text-subtitle1 text-bold">
@@ -54,7 +60,7 @@
             />
           </div>
           <q-select
-            v-if="tipo_Eleccion.siglas == 'DIP' && tipo_Candidatura == 'MR'"
+            v-if="tipo_Eleccion.siglas == 'DIP'"
             v-model="distrito_Id"
             :options="list_Distritos"
             label="Distrito"
@@ -65,6 +71,7 @@
             v-if="
               tipo_Eleccion.siglas == 'PYS' || tipo_Eleccion.siglas == 'REG'
             "
+            :readonly="perfil == 'Capturista CME'"
             v-model="municipio_Id"
             :options="list_Municipios"
             label="Municipio"
@@ -109,24 +116,30 @@ import { useQuasar, QSpinnerCube } from "quasar";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { useConsultaStore } from "src/stores/consulta-store";
 import { onBeforeMount, ref, watch } from "vue";
+import { EncryptStorage } from "storage-encryption";
 
 //-----------------------------------------------------------
 
 const $q = useQuasar();
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const consultaStore = useConsultaStore();
 const configuracionStore = useConfiguracionStore();
-const { modal, encabezado } = storeToRefs(consultaStore);
+const {
+  modal,
+  encabezado,
+  tipo_Eleccion,
+  tipo_Candidatura,
+  distrito_Id,
+  municipio_Id,
+  demarcacion_Id,
+} = storeToRefs(consultaStore);
 const {
   list_Tipo_Elecciones,
   list_Municipios,
   list_Demarcaciones,
   list_Distritos,
 } = storeToRefs(configuracionStore);
-const tipo_Eleccion = ref(null);
-const tipo_Candidatura = ref("MR");
-const distrito_Id = ref(null);
-const municipio_Id = ref(null);
-const demarcacion_Id = ref(null);
+const perfil = ref(encryptStorage.decrypt("perfil"));
 
 //-----------------------------------------------------------
 
@@ -137,16 +150,32 @@ onBeforeMount(() => {
 watch(tipo_Eleccion, (val) => {
   if (val != null) {
     limpiar();
+    tipo_Candidatura.value = "MR";
+    if (perfil.value == "Capturista CME") {
+      cargarMunicipio();
+    }
   }
 });
 
 watch(tipo_Candidatura, (val) => {
   if (val != null) {
     limpiar();
+    if (perfil.value == "Capturista CME") {
+      cargarMunicipio();
+    }
   }
 });
 
 //-----------------------------------------------------------
+
+const cargarMunicipio = () => {
+  if (municipio_Id.value == null) {
+    let municipioFiltrado = list_Municipios.value.find(
+      (x) => x.value == encryptStorage.decrypt("municipio_Id")
+    );
+    municipio_Id.value = municipioFiltrado;
+  }
+};
 
 const limpiar = () => {
   distrito_Id.value = null;
@@ -157,10 +186,10 @@ const limpiar = () => {
 const cargarData = async () => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
-    backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
+    backgroundColor: "blue-grey",
+    message: "Espere un momento por favor...",
     messageColor: "black",
   });
   await configuracionStore.loadTipoElecciones();
@@ -177,10 +206,10 @@ const actualizarModal = (valor) => {
 const consultar = async () => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
-    backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
+    backgroundColor: "blue-grey",
+    message: "Espere un momento por favor...",
     messageColor: "black",
   });
   encabezado.value.tipo_Candidatura = tipo_Candidatura.value;
@@ -197,15 +226,26 @@ const consultar = async () => {
     await consultaStore.cosultaResultadosMr(
       tipo_Eleccion.value.siglas,
       tipo_Eleccion.value.id,
-      municipio_Id.value,
+      encryptStorage.decrypt("oficina_Letra") == "CME central IEEN"
+        ? municipio_Id.value
+        : encryptStorage.decrypt("municipio_Id"),
       distrito_Id.value,
       demarcacion_Id.value
     );
   } else {
-    await consultaStore.cosultaResultadosRP(
-      tipo_Eleccion.value.id,
-      municipio_Id.value
-    );
+    if (tipo_Eleccion.value.siglas != "DIP") {
+      await consultaStore.cosultaResultadosRP(
+        tipo_Eleccion.value.id,
+        municipio_Id.value,
+        distrito_Id.value
+      );
+    } else {
+      await consultaStore.cosultaResultadosRP(
+        tipo_Eleccion.value.id,
+        encryptStorage.decrypt("municipio_Id"),
+        distrito_Id.value
+      );
+    }
   }
   $q.loading.hide();
 };

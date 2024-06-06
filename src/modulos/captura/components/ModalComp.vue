@@ -28,7 +28,6 @@
               flat
               round
               dense
-              v-close-popup
             />
           </div>
           <div class="row bg-blue-grey-3 q-pl-md text-bold text-h6">
@@ -143,7 +142,6 @@
                     resultados.encabezado.total_Votos_Candidatos_No_Registrados
                   "
                   mask="###"
-                  placeholder="0"
                   :name="`myTextTotales1`"
                   dense
                   input-class="text-right"
@@ -165,7 +163,6 @@
                   class="text-h6"
                   v-model="resultados.encabezado.total_Votos_Nulos"
                   mask="###"
-                  placeholder="0"
                   :name="`myTextTotales2`"
                   dense
                   input-class="text-right"
@@ -186,8 +183,9 @@
                 <q-input
                   class="text-h6"
                   v-model="resultados.encabezado.total_Votos"
-                  mask="###"
-                  placeholder="0"
+                  :mask="
+                    encabezado.casilla.includes('Especial') ? '####' : '###'
+                  "
                   :name="`myTextTotales3`"
                   dense
                   input-class="text-right"
@@ -226,7 +224,7 @@
 import { useQuasar, QSpinnerCube } from "quasar";
 import { storeToRefs } from "pinia";
 import { useCapturaStore } from "src/stores/captura-store";
-import { computed, defineProps, onBeforeMount, ref, watchEffect } from "vue";
+import { defineProps, onBeforeMount, ref, watchEffect } from "vue";
 import { useAuthStore } from "src/stores/auth-store";
 import Swal from "sweetalert2";
 
@@ -236,7 +234,7 @@ const $q = useQuasar();
 const capturaStore = useCapturaStore();
 const authStore = useAuthStore();
 const { modulo } = storeToRefs(authStore);
-const { modal, resultados, encabezado } = storeToRefs(capturaStore);
+const { modal, resultados, encabezado, loading } = storeToRefs(capturaStore);
 const props = defineProps({
   rp: { type: Boolean, required: true },
   tipo_id: { type: Number, required: true },
@@ -244,6 +242,7 @@ const props = defineProps({
 });
 const visible = ref(false);
 const siglas = "SC-CAP-RES";
+const totalVotos = ref(0);
 
 //----------------------------------------------------------
 
@@ -259,33 +258,6 @@ const leerPermisos = async () => {
   $q.loading.hide();
 };
 
-const totalVotos = computed(() => {
-  let total = 0;
-  for (let partido of resultados.value.partidos) {
-    total += parseInt(partido.votos);
-    if (partido.votos == "" || partido.votos == NaN) {
-      partido.votos = 0;
-    }
-  }
-  for (let coalicion of resultados.value.coaliciones) {
-    total += parseInt(coalicion.votos);
-    if (coalicion.votos == "" || coalicion.votos == NaN) {
-      coalicion.votos = 0;
-    }
-  }
-  if (
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
-  ) {
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-    );
-  }
-  if (resultados.value.encabezado.total_Votos_Nulos !== "") {
-    total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-  }
-  return total;
-});
-
 watchEffect(() => {
   if (
     totalVotos.value > resultados.value.boletas ||
@@ -295,13 +267,69 @@ watchEffect(() => {
   } else {
     visible.value = false;
   }
+
+  let total = 0;
+  for (let partido of resultados.value.partidos) {
+    if (partido.votos == "" || partido.votos == NaN) {
+      partido.votos = 0;
+    }
+    total += parseInt(partido.votos);
+  }
+  for (let coalicion of resultados.value.coaliciones) {
+    if (coalicion.votos == "" || coalicion.votos == NaN) {
+      coalicion.votos = 0;
+    }
+    total += parseInt(coalicion.votos);
+  }
+  // if (resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != "") {
+  //   total += parseInt(
+  //     resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+  //   );
+  // }
+  if (
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados == "" ||
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados == NaN
+  ) {
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados = 0;
+  }
+  total += parseInt(
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+  );
+  // if (resultados.value.encabezado.total_Votos_Nulos != "") {
+  //   total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
+  // }
+  if (
+    resultados.value.encabezado.total_Votos_Nulos == "" ||
+    resultados.value.encabezado.total_Votos_Nulos == NaN
+  ) {
+    resultados.value.encabezado.total_Votos_Nulos = 0;
+  }
+  total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
+  totalVotos.value = total;
 });
 
 const actualizarModal = (valor) => {
-  capturaStore.actualizarModal(valor);
+  if (resultados.value.encabezado.total_Sistema == 0) {
+    $q.dialog({
+      title: "Atención",
+      message: "Deberá guardar la información",
+      icon: "Warning",
+      html: true,
+      persistent: true,
+      transitionShow: "scale",
+      transitionHide: "scale",
+      cancel: "Regresar",
+      ok: false,
+    });
+  } else {
+    capturaStore.initResultados();
+    capturaStore.intiEncabezado();
+    capturaStore.actualizarModal(valor);
+  }
 };
 
 const reload = async () => {
+  loading.value = true;
   if (props.tipo_siglas == "PYS") {
     await capturaStore.load_cotejo(props.tipo_id);
     await capturaStore.load_recuento(props.tipo_id);
@@ -311,6 +339,8 @@ const reload = async () => {
     await capturaStore.load_cotejo_rp(props.tipo_id);
     await capturaStore.load_recuento_rp(props.tipo_id);
   }
+  capturaStore.cargarFiltrosTabla(true);
+  loading.value = false;
 };
 
 function getFocus(index, tipo) {
@@ -345,6 +375,7 @@ function getFocus(index, tipo) {
 
 const onSubmit = async () => {
   let resp = null;
+  let total = 0;
   $q.dialog({
     title: "¿Esta seguro de enviar los resultados?",
     message:
@@ -375,7 +406,7 @@ const onSubmit = async () => {
     transitionShow: "scale",
     transitionHide: "scale",
     cancel: {
-      iconRight: "cancel",
+      iconRight: "red",
       color: "red",
       label: " No, Cancelar!",
     },
@@ -387,33 +418,47 @@ const onSubmit = async () => {
   }).onOk(async () => {
     $q.loading.show({
       spinner: QSpinnerCube,
-      spinnerColor: "pink",
+      spinnerColor: "blue-grey",
       spinnerSize: 140,
       backgroundColor: "purple-2",
       message: "Espere un momento por favor...",
       messageColor: "black",
     });
-    let total = 0;
+
     for (let partido of resultados.value.partidos) {
+      if (partido.votos == "" || partido.votos == NaN) {
+        partido.votos = 0;
+      }
       total += parseInt(partido.votos);
     }
     for (let coalicion of resultados.value.coaliciones) {
+      if (coalicion.votos == "" || coalicion.votos == NaN) {
+        coalicion.votos = 0;
+      }
       total += parseInt(coalicion.votos);
     }
+    // if (
+    //   resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
+    // ) {
+    //   total += parseInt(
+    //     resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+    //   );
+    // }
     total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
-        ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-        : 0
+      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
     );
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Nulos != ""
-        ? resultados.value.encabezado.total_Votos_Nulos
-        : 0
+    // if (resultados.value.encabezado.total_Votos_Nulos != "") {
+    //   total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
+    // }
+    total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
+    resultados.value.encabezado.total_Sistema = parseInt(
+      total == 0 ? totalVotos.value : total
     );
-    resultados.value.encabezado.total_Sistema = parseInt(total);
     resultados.value.encabezado.total_Votos = parseInt(
       resultados.value.encabezado.total_Votos
     );
+    parseInt(resultados.value.encabezado.total_Votos_Candidatos_No_Registrados);
+    parseInt(resultados.value.encabezado.total_Votos_Nulos);
     if (props.rp == true) {
       resp = await capturaStore.registrarResultadosRp(resultados.value);
     } else {
@@ -428,8 +473,8 @@ const onSubmit = async () => {
         timer: 1500,
       });
       reload();
-      capturaStore.initResultados();
       actualizarModal(false);
+      capturaStore.cargarFiltrosTabla(false);
     } else {
       $q.loading.hide();
       $q.notify({

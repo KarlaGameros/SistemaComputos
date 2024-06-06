@@ -15,7 +15,7 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
       demarcacion: null,
       eleccion: null,
     },
-    resultados: {
+    resultadosVA: {
       boletas: null,
       encabezado: {
         grupo_Trabajo: null,
@@ -44,20 +44,27 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
       this.visualizar = valor;
     },
 
+    initEncabezado() {
+      this.encabezado.distrito = null;
+      this.encabezado.municipio = null;
+      this.encabezado.demarcacion = null;
+      this.encabezado.eleccion = null;
+    },
+
     initResultado() {
-      this.resultados.boletas = null;
-      this.resultados.encabezado.id = null;
-      this.resultados.encabezado.grupo_Trabajo = null;
-      this.resultados.encabezado.punto_Recuento = null;
-      this.resultados.encabezado.total_Sistema = null;
-      this.resultados.encabezado.total_Votos = null;
-      this.resultados.encabezado.total_Votos_Candidatos_No_Registrados = null;
-      this.resultados.encabezado.total_Votos_Nulos = null;
-      this.resultados.encabezado.votos_Reservados = null;
-      this.resultados.encabezado.voto_Anticipado_Id = null;
-      this.resultados.partidos = [];
-      this.resultados.coaliciones = [];
-      this.resultados.voto_Anticipado_Id = null;
+      this.resultadosVA.boletas = null;
+      this.resultadosVA.encabezado.id = null;
+      this.resultadosVA.voto_Anticipado_Id = null;
+      this.resultadosVA.encabezado.grupo_Trabajo = null;
+      this.resultadosVA.encabezado.punto_Recuento = null;
+      this.resultadosVA.encabezado.total_Sistema = null;
+      this.resultadosVA.encabezado.total_Votos = null;
+      this.resultadosVA.encabezado.total_Votos_Candidatos_No_Registrados = null;
+      this.resultadosVA.encabezado.total_Votos_Nulos = null;
+      this.resultadosVA.encabezado.votos_Reservados = null;
+      this.resultadosVA.encabezado.voto_Anticipado_Id = null;
+      this.resultadosVA.partidos = [];
+      this.resultadosVA.coaliciones = [];
     },
 
     //--------------------------------------------------------------
@@ -68,26 +75,26 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
         if (resp.status == 200) {
           const { success, data } = resp.data;
           if (success) {
-            this.resultados.boletas = boletas;
-            this.resultados.encabezado.id = data.encabezado.id;
-            this.resultados.encabezado.voto_Anticipado_Id =
+            this.resultadosVA.boletas = boletas;
+            this.resultadosVA.encabezado.id = data.encabezado.id;
+            this.resultadosVA.encabezado.voto_Anticipado_Id =
               data.encabezado.voto_Anticipado_Id;
-            this.resultados.encabezado.total_Votos_Nulos =
+            this.resultadosVA.encabezado.total_Votos_Nulos =
               data.encabezado.total_Votos_Nulos;
-            this.resultados.encabezado.total_Votos_Candidatos_No_Registrados =
+            this.resultadosVA.encabezado.total_Votos_Candidatos_No_Registrados =
               data.encabezado.total_Votos_Candidatos_No_Registrados;
-            this.resultados.encabezado.total_Votos =
+            this.resultadosVA.encabezado.total_Votos =
               data.encabezado.total_Votos.toLocaleString("en-US");
-            this.resultados.encabezado.total_Sistema =
+            this.resultadosVA.encabezado.total_Sistema =
               data.encabezado.total_Sistema.toLocaleString("en-US");
-            this.resultados.encabezado.grupo_Trabajo =
+            this.resultadosVA.encabezado.grupo_Trabajo =
               data.encabezado.grupo_Trabajo;
-            this.resultados.encabezado.punto_Recuento =
+            this.resultadosVA.encabezado.punto_Recuento =
               data.encabezado.punto_Recuento;
-            this.resultados.encabezado.votos_Reservados =
+            this.resultadosVA.encabezado.votos_Reservados =
               data.encabezado.votos_Reservados;
-            this.resultados.partidos = data.partidos;
-            this.resultados.coaliciones = data.coaliciones;
+            this.resultadosVA.partidos = data.partidos;
+            this.resultadosVA.coaliciones = data.coaliciones;
           }
         }
       } catch (error) {
@@ -97,6 +104,7 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
         };
       }
     },
+
     //--------------------------------------------------------------
     async load_va_by_eleccion(tipo_eleccion_id) {
       try {
@@ -128,7 +136,6 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
           }
         }
       } catch (error) {
-        console.error(error);
         return {
           success: false,
           data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
@@ -167,7 +174,6 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
           }
         }
       } catch (error) {
-        console.error(error);
         return {
           success: false,
           data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
@@ -190,27 +196,31 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
           `/ResultadoComputosVa/Inicializar?Voto_Anticipado_Id=${Voto_Anticipado_Id}&Tipo_Computo=${Tipo_Computo}&Grupo_Trabajo=${Grupo_Trabajo}&Punto_Recuento=${Punto_Recuento}&Votos_Reservados=${Votos_Reservados}`
         );
         if (resp.status == 200) {
-          const { success, data } = resp.data;
+          const { success, data, boletas } = resp.data;
           if (success) {
-            this.resultados.voto_Anticipado_Id = Voto_Anticipado_Id;
-            this.resultados.encabezado.id = data.encabezado.id;
-            this.resultados.encabezado.grupo_Trabajo =
+            this.resultadosVA.encabezado.votos_Reservados =
+              parseInt(Votos_Reservados);
+            this.resultadosVA.boletas = boletas;
+            this.resultadosVA.voto_Anticipado_Id = Voto_Anticipado_Id;
+            this.resultadosVA.encabezado.id = data.encabezado.id;
+            this.resultadosVA.encabezado.grupo_Trabajo =
               data.encabezado.grupo_Trabajo;
-            this.resultados.encabezado.punto_Recuento =
+            this.resultadosVA.encabezado.punto_Recuento =
               data.encabezado.punto_Recuento;
-            this.resultados.encabezado.total_Sistema =
+            this.resultadosVA.encabezado.total_Sistema =
               data.encabezado.total_Sistema;
-            this.resultados.encabezado.total_Votos =
+            this.resultadosVA.encabezado.total_Votos =
               data.encabezado.total_Votos;
-            this.resultados.encabezado.total_Votos_Candidatos_No_Registrados =
+            this.resultadosVA.encabezado.total_Votos_Candidatos_No_Registrados =
               data.encabezado.total_Votos_Candidatos_No_Registrados;
-            this.resultados.encabezado.total_Votos_Nulos =
+            this.resultadosVA.encabezado.total_Votos_Nulos =
               data.encabezado.total_Votos_Nulos;
-            this.resultados.encabezado.total_Votos_Nulos =
+            this.resultadosVA.encabezado.total_Votos_Nulos =
               data.encabezado.total_Votos_Nulos;
-
+            this.resultadosVA.encabezado.voto_Anticipado_Id =
+              Voto_Anticipado_Id;
             if (data.partidos.length > 0) {
-              this.resultados.partidos = data.partidos.map((element) => {
+              this.resultadosVA.partidos = data.partidos.map((element) => {
                 return {
                   id: element.id,
                   coalicion: element.coalicion,
@@ -227,21 +237,23 @@ export const useVotoAnticipadoStore = defineStore("useVotoAnticipadoStore", {
               });
             }
             if (data.coaliciones.length > 0) {
-              this.resultados.coaliciones = data.coaliciones.map((element) => {
-                return {
-                  id: element.id,
-                  coalicion: element.coalicion,
-                  coalicion_Id: element.coalicion_Id,
-                  combinacion: element.combinacion,
-                  combinacion_Id: element.combinacion_Id,
-                  partido: element.partido,
-                  partido_Id: element.partido_Id,
-                  resultado_Id: element.resultado_Id,
-                  voto_Valido: element.voto_Valido,
-                  votos: element.votos,
-                  logo_Url: element.logo_Url,
-                };
-              });
+              this.resultadosVA.coaliciones = data.coaliciones.map(
+                (element) => {
+                  return {
+                    id: element.id,
+                    coalicion: element.coalicion,
+                    coalicion_Id: element.coalicion_Id,
+                    combinacion: element.combinacion,
+                    combinacion_Id: element.combinacion_Id,
+                    partido: element.partido,
+                    partido_Id: element.partido_Id,
+                    resultado_Id: element.resultado_Id,
+                    voto_Valido: element.voto_Valido,
+                    votos: element.votos,
+                    logo_Url: element.logo_Url,
+                  };
+                }
+              );
             }
           }
         }

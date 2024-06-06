@@ -107,12 +107,15 @@ import { useQuasar, QSpinnerCube } from "quasar";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { useConsultaStore } from "src/stores/consulta-store";
 import { onBeforeMount, ref } from "vue";
+import { EncryptStorage } from "storage-encryption";
+import Swal from "sweetalert2";
 
 //-----------------------------------------------------------
 
 const $q = useQuasar();
 const consultaStore = useConsultaStore();
 const configuracionStore = useConfiguracionStore();
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const { modalCambiarRep, encabezado, representacion } =
   storeToRefs(consultaStore);
 const { list_Partidos_Politicos } = storeToRefs(configuracionStore);
@@ -120,32 +123,13 @@ const partido_Id = ref(null);
 const sexo_Id = ref(null);
 const cargo_Id = ref(null);
 const list_Cargo = ref([
-  "Representante Propietaria Estatal",
-  "Representante Propietario Estatal",
-  "Representante Suplente Estatal",
+  "Representante Propietaria Local",
+  "Representante Propietario Local",
+  "Representante Suplente Local",
 ]);
 const list_Sexo = ref(["Mujer", "Hombre"]);
 
 //-----------------------------------------------------------
-
-onBeforeMount(() => {
-  cargarData();
-});
-
-//-----------------------------------------------------------
-
-const cargarData = async () => {
-  $q.loading.show({
-    spinner: QSpinnerCube,
-    spinnerColor: "pink",
-    spinnerSize: 140,
-    backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
-    messageColor: "black",
-  });
-  await configuracionStore.loadPartidosPoliticos();
-  $q.loading.hide();
-};
 
 const actualizarModal = (valor) => {
   partido_Id.value = null;
@@ -159,27 +143,29 @@ const actualizarModal = (valor) => {
 const onSubmit = async () => {
   let resp = null;
   representacion.value.oficina_Id = parseInt(
-    localStorage.getItem("oficina_Id")
+    encryptStorage.decrypt("oficina_Id")
   );
   representacion.value.puesto = cargo_Id.value;
   representacion.value.sexo = sexo_Id.value;
   representacion.value.partido_Id = partido_Id.value.value;
   resp = await consultaStore.createNuevoRepresentante(representacion.value);
   if (resp.success) {
-    $q.notify({
-      position: "top-right",
-      type: "positive",
-      message: resp.data,
+    $q.loading.hide();
+    Swal.fire({
+      icon: "success",
+      title: resp.data,
+      showConfirmButton: false,
+      timer: 1500,
     });
     actualizarModal(false);
     await consultaStore.loadIntegracionPartidosPoliticos();
   } else {
+    $q.loading.hide();
     $q.notify({
       position: "top-right",
       type: "negative",
       message: resp.data,
     });
   }
-  $q.loading.hide();
 };
 </script>

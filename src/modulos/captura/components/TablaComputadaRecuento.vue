@@ -1,15 +1,16 @@
 <template>
   <q-table
+    :rows-per-page-options="[5, 10, 15, 20, 25, 30, 50]"
     :loading="loading"
     :visible-columns="visible_columns"
     :rows="
       rp == true
         ? tipo == 'cotejo'
-          ? pendientes_cotejo_rp
-          : pendientes_recuento_rp
+          ? pendientes_cotejo_rp_filtro
+          : pendientes_recuento_rp_filtro
         : tipo == 'cotejo'
-        ? pendientes_cotejo
-        : pendientes_recuento
+        ? pendientes_cotejo_filtro
+        : pendientes_recuento_filtro
     "
     :columns="columns"
     :filter="filter"
@@ -17,6 +18,22 @@
     v-model:pagination="pagination"
     color="pink"
   >
+    <template v-slot:header-cell="props">
+      <q-th :props="props">
+        <q-input
+          v-if="props.col.name != 'total_Causales' && props.col.name != 'id'"
+          @keyup.enter.prevent="
+            filteredRows(props.col.name, columnFilters[props.col.name])
+          "
+          filled
+          dense
+          debounce="300"
+          v-model="columnFilters[props.col.name]"
+          placeholder="Buscar"
+        />
+        {{ props.col.label }}
+      </q-th>
+    </template>
     <template v-slot:top-right>
       <q-input
         borderless
@@ -68,12 +85,13 @@
 </template>
 
 <script setup>
-import { ref, defineProps, watch, onBeforeMount, watchEffect } from "vue";
+import { ref, defineProps, watch, onBeforeMount } from "vue";
 import { useCapturaStore } from "src/stores/captura-store";
 import { useRerservasStore } from "src/stores/reservas-store";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "src/stores/auth-store";
 import { useQuasar, QSpinnerCube } from "quasar";
+import { useConfiguracionStore } from "src/stores/configuracion-store";
 import ModalComp from "../components/ModalComp.vue";
 import Swal from "sweetalert2";
 
@@ -83,19 +101,29 @@ const $q = useQuasar();
 const capturaStore = useCapturaStore();
 const reservasStore = useRerservasStore();
 const authStore = useAuthStore();
+const configuracionStore = useConfiguracionStore();
 const { modulo } = storeToRefs(authStore);
 const {
   pendientes_cotejo,
+  pendientes_cotejo_filtro,
   pendientes_cotejo_rp,
+  pendientes_cotejo_rp_filtro,
   pendientes_recuento,
+  pendientes_recuento_filtro,
   pendientes_recuento_rp,
+  pendientes_recuento_rp_filtro,
   loading,
   encabezado,
+  loadFiltros,
 } = storeToRefs(capturaStore);
+const { list_Municipios, list_Distritos_By_Municipio } =
+  storeToRefs(configuracionStore);
 const casilla_Id = ref(null);
 const tipo_Computo = ref(null);
 const grupo_Trabajo = ref(null);
 const punto_Recuento = ref(null);
+const municipio_Id = ref(null);
+const distrito_Id = ref(null);
 const visible_columns = ref([]);
 const props = defineProps({
   tipo_siglas: { type: String, required: true },
@@ -104,6 +132,7 @@ const props = defineProps({
   rp: { type: Boolean, required: true },
 });
 const siglas = "SC-CAP-RES";
+const columnFilters = ref({});
 
 //----------------------------------------------------------
 
@@ -113,56 +142,48 @@ const columns = [
     align: "center",
     label: "Municipio",
     field: "municipio",
-    sortable: true,
   },
   {
     name: "demarcacion",
     align: "center",
     label: "Demarcación",
     field: "demarcacion",
-    sortable: true,
   },
   {
     name: "distrito",
     align: "center",
     label: "Distrito",
     field: "distrito",
-    sortable: true,
   },
   {
     name: "seccion",
     align: "center",
     label: "Sección",
     field: "seccion",
-    sortable: true,
   },
   {
     name: "casilla",
     align: "center",
     label: "Casilla",
     field: "casilla",
-    sortable: true,
   },
   {
     name: "casilla_Id",
     align: "center",
     label: "casilla_Id",
     field: "casilla_Id",
-    sortable: true,
   },
   {
     name: "total_Causales",
     align: "center",
     label: "No. Causales",
     field: "total_Causales",
-    sortable: true,
   },
   {
     name: "id",
     align: "center",
     label: "Acciones",
     field: "id",
-    sortable: true,
   },
 ];
 const filter = ref("");
@@ -182,31 +203,484 @@ onBeforeMount(() => {
 
 //----------------------------------------------------------
 
+watch(loadFiltros, (val) => {
+  if (val == true) {
+    filter.value = "";
+    columnFilters.value = {};
+  }
+});
+
 watch(props, (val) => {
   if (val != null) {
+    columnFilters.value = {};
+    pagination.value = {
+      sortBy: "desc",
+      descending: false,
+      page: 1,
+      rowsPerPage: 5,
+    };
     evalua_columnas();
   }
 });
 
-watchEffect(() => {
-  switch (props.tipo_siglas) {
-    case "DIP":
-    case "REG":
-      if (props.rp == true) {
-        loading.value = pendientes_cotejo.value.length == 0;
-        loading.value = pendientes_recuento.value.length == 0;
-      } else {
-        loading.value = pendientes_cotejo_rp.value.length == 0;
-        loading.value = pendientes_recuento_rp.value.length == 0;
-      }
-      break;
-    case "PYS":
-      loading.value = pendientes_cotejo.value.length == 0;
-      break;
+watch(municipio_Id, async (val) => {
+  if (val != null) {
+    if (props.tipo_siglas == "DIP") {
+      distrito_Id.value = null;
+      await configuracionStore.loadDistritosByMunicipio(val.value);
+    }
   }
 });
 
 //----------------------------------------------------------
+const filteredRows = () => {
+  loading.value = true;
+  if (props.rp == false && props.tipo == "cotejo") {
+    pendientes_cotejo_filtro.value = pendientes_cotejo.value.filter((item) => {
+      let cumple = true;
+      if (columnFilters.value["casilla"] !== undefined) {
+        if (columnFilters.value["casilla"] == "") {
+          cumple = cumple && item.casilla === item.casilla;
+        } else {
+          var chars = {
+            á: "a",
+            é: "e",
+            í: "i",
+            ó: "o",
+            ú: "u",
+            à: "a",
+            è: "e",
+            ì: "i",
+            ò: "o",
+            ù: "u",
+            ñ: "n",
+            Á: "A",
+            É: "E",
+            Í: "I",
+            Ó: "O",
+            Ú: "U",
+            À: "A",
+            È: "E",
+            Ì: "I",
+            Ò: "O",
+            Ù: "U",
+            Ñ: "N",
+          };
+          var expr = /[áàéèíìóòúùñ]/gi;
+          var res = item.casilla.toUpperCase().replace(expr, function (e) {
+            return chars[e];
+          });
+          cumple =
+            cumple &&
+            res.includes(columnFilters.value["casilla"].toUpperCase());
+        }
+      }
+      if (columnFilters.value["municipio"] !== undefined) {
+        if (columnFilters.value["municipio"] == "") {
+          cumple = cumple && item.municipio === item.municipio;
+        } else {
+          let municipio = item.municipio.toUpperCase();
+          cumple =
+            cumple &&
+            municipio.includes(columnFilters.value["municipio"].toUpperCase());
+        }
+      }
+      if (columnFilters.value["distrito"] !== undefined) {
+        if (columnFilters.value["distrito"] == "") {
+          cumple = cumple && item.distrito === item.distrito;
+        } else {
+          cumple =
+            cumple &&
+            item.distrito === parseInt(columnFilters.value["distrito"]);
+        }
+      }
+      if (columnFilters.value["seccion"] !== undefined) {
+        if (columnFilters.value["seccion"] == "") {
+          cumple = cumple && item.seccion === item.seccion;
+        } else {
+          cumple =
+            cumple && item.seccion.includes(columnFilters.value["seccion"]);
+        }
+      }
+
+      if (columnFilters.value["demarcacion"] !== undefined) {
+        if (columnFilters.value["demarcacion"] == "") {
+          cumple = cumple && item.demarcacion === item.demarcacion;
+        } else {
+          var chars = {
+            á: "a",
+            é: "e",
+            í: "i",
+            ó: "o",
+            ú: "u",
+            à: "a",
+            è: "e",
+            ì: "i",
+            ò: "o",
+            ù: "u",
+            ñ: "n",
+            Á: "A",
+            É: "E",
+            Í: "I",
+            Ó: "O",
+            Ú: "U",
+            À: "A",
+            È: "E",
+            Ì: "I",
+            Ò: "O",
+            Ù: "U",
+            Ñ: "N",
+          };
+          var expr = /[áàéèíìóòúùñ]/gi;
+          var res = item.demarcacion.toUpperCase().replace(expr, function (e) {
+            return chars[e];
+          });
+          cumple =
+            cumple &&
+            res.includes(columnFilters.value["demarcacion"].toUpperCase());
+        }
+      }
+      return cumple;
+    });
+  } else if (props.rp == false && props.tipo != "cotejo") {
+    pendientes_recuento_filtro.value = pendientes_recuento.value.filter(
+      (item) => {
+        let cumple = true;
+        if (columnFilters.value["casilla"] !== undefined) {
+          if (columnFilters.value["casilla"] == "") {
+            cumple = cumple && item.casilla === item.casilla;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.casilla.toUpperCase().replace(expr, function (e) {
+              return chars[e];
+            });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["casilla"].toUpperCase());
+          }
+        }
+        if (columnFilters.value["municipio"] !== undefined) {
+          if (columnFilters.value["municipio"] == "") {
+            cumple = cumple && item.municipio === item.municipio;
+          } else {
+            let municipio = item.municipio.toUpperCase();
+            cumple =
+              cumple &&
+              municipio.includes(
+                columnFilters.value["municipio"].toUpperCase()
+              );
+          }
+        }
+        if (columnFilters.value["distrito"] !== undefined) {
+          if (columnFilters.value["distrito"] == "") {
+            cumple = cumple && item.distrito === item.distrito;
+          } else {
+            cumple =
+              cumple &&
+              item.distrito === parseInt(columnFilters.value["distrito"]);
+          }
+        }
+        if (columnFilters.value["seccion"] !== undefined) {
+          if (columnFilters.value["seccion"] == "") {
+            cumple = cumple && item.seccion === item.seccion;
+          } else {
+            cumple =
+              cumple && item.seccion.includes(columnFilters.value["seccion"]);
+          }
+        }
+        if (columnFilters.value["demarcacion"] !== undefined) {
+          if (columnFilters.value["demarcacion"] == "") {
+            cumple = cumple && item.demarcacion === item.demarcacion;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.demarcacion
+              .toUpperCase()
+              .replace(expr, function (e) {
+                return chars[e];
+              });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["demarcacion"].toUpperCase());
+          }
+        }
+        return cumple;
+      }
+    );
+  } else if (props.rp == true && props.tipo == "cotejo") {
+    pendientes_cotejo_rp_filtro.value = pendientes_cotejo_rp.value.filter(
+      (item) => {
+        let cumple = true;
+        if (columnFilters.value["casilla"] !== undefined) {
+          if (columnFilters.value["casilla"] == "") {
+            cumple = cumple && item.casilla === item.casilla;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.casilla.toUpperCase().replace(expr, function (e) {
+              return chars[e];
+            });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["casilla"].toUpperCase());
+          }
+        }
+        if (columnFilters.value["municipio"] !== undefined) {
+          if (columnFilters.value["municipio"] == "") {
+            cumple = cumple && item.municipio === item.municipio;
+          } else {
+            let municipio = item.municipio.toUpperCase();
+            cumple =
+              cumple &&
+              municipio.includes(
+                columnFilters.value["municipio"].toUpperCase()
+              );
+          }
+        }
+        if (columnFilters.value["distrito"] !== undefined) {
+          if (columnFilters.value["distrito"] == "") {
+            cumple = cumple && item.distrito === item.distrito;
+          } else {
+            cumple =
+              cumple &&
+              item.distrito === parseInt(columnFilters.value["distrito"]);
+          }
+        }
+        if (columnFilters.value["seccion"] !== undefined) {
+          if (columnFilters.value["seccion"] == "") {
+            cumple = cumple && item.seccion === item.seccion;
+          } else {
+            cumple =
+              cumple && item.seccion.includes(columnFilters.value["seccion"]);
+          }
+        }
+        if (columnFilters.value["demarcacion"] !== undefined) {
+          if (columnFilters.value["demarcacion"] == "") {
+            cumple = cumple && item.demarcacion === item.demarcacion;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.demarcacion
+              .toUpperCase()
+              .replace(expr, function (e) {
+                return chars[e];
+              });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["demarcacion"].toUpperCase());
+          }
+        }
+        return cumple;
+      }
+    );
+  } else if (props.rp == true && props.tipo != "cotejo") {
+    pendientes_recuento_rp_filtro.value = pendientes_recuento_rp.value.filter(
+      (item) => {
+        let cumple = true;
+        if (columnFilters.value["casilla"] !== undefined) {
+          if (columnFilters.value["casilla"] == "") {
+            cumple = cumple && item.casilla === item.casilla;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.casilla.toUpperCase().replace(expr, function (e) {
+              return chars[e];
+            });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["casilla"].toUpperCase());
+          }
+        }
+        if (columnFilters.value["municipio"] !== undefined) {
+          if (columnFilters.value["municipio"] == "") {
+            cumple = cumple && item.municipio === item.municipio;
+          } else {
+            let municipio = item.municipio.toUpperCase();
+            cumple =
+              cumple &&
+              municipio.includes(
+                columnFilters.value["municipio"].toUpperCase()
+              );
+          }
+        }
+        if (columnFilters.value["distrito"] !== undefined) {
+          if (columnFilters.value["distrito"] == "") {
+            cumple = cumple && item.distrito === item.distrito;
+          } else {
+            cumple =
+              cumple &&
+              item.distrito === parseInt(columnFilters.value["distrito"]);
+          }
+        }
+        if (columnFilters.value["seccion"] !== undefined) {
+          if (columnFilters.value["seccion"] == "") {
+            cumple = cumple && item.seccion === item.seccion;
+          } else {
+            cumple =
+              cumple && item.seccion.includes(columnFilters.value["seccion"]);
+          }
+        }
+        if (columnFilters.value["demarcacion"] !== undefined) {
+          if (columnFilters.value["demarcacion"] == "") {
+            cumple = cumple && item.demarcacion === item.demarcacion;
+          } else {
+            var chars = {
+              á: "a",
+              é: "e",
+              í: "i",
+              ó: "o",
+              ú: "u",
+              à: "a",
+              è: "e",
+              ì: "i",
+              ò: "o",
+              ù: "u",
+              ñ: "n",
+              Á: "A",
+              É: "E",
+              Í: "I",
+              Ó: "O",
+              Ú: "U",
+              À: "A",
+              È: "E",
+              Ì: "I",
+              Ò: "O",
+              Ù: "U",
+              Ñ: "N",
+            };
+            var expr = /[áàéèíìóòúùñ]/gi;
+            var res = item.demarcacion
+              .toUpperCase()
+              .replace(expr, function (e) {
+                return chars[e];
+              });
+            cumple =
+              cumple &&
+              res.includes(columnFilters.value["demarcacion"].toUpperCase());
+          }
+        }
+        return cumple;
+      }
+    );
+  }
+  loading.value = false;
+};
 
 const modalCausales = async (row, valor) => {
   await capturaStore.load_causales_by_casilla(props.tipo_id, row.casilla_Id);
@@ -256,9 +730,20 @@ const evalua_columnas = () => {
   loading.value = false;
 };
 
+const limpiar = () => {
+  casilla_Id.value = null;
+  tipo_Computo.value = null;
+  grupo_Trabajo.value = null;
+  punto_Recuento.value = null;
+  municipio_Id.value = null;
+  distrito_Id.value = null;
+};
+
 //Cotejo 1
 //Recueno parcial 2
 const tipoComputoAlert = (row) => {
+  limpiar();
+  capturaStore.intiEncabezado();
   encabezado.value.rp = props.rp;
   encabezado.value.distrito = row.distrito;
   encabezado.value.municipio = row.municipio;
@@ -332,10 +817,10 @@ const recuentoAlert = async (row) => {
 const reservar = async (id) => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
     backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
+    message: "Espere un momento por favor...",
     messageColor: "black",
   });
   let resp = null;
@@ -446,10 +931,10 @@ const resumen = () => {
     if (result.isConfirmed) {
       $q.loading.show({
         spinner: QSpinnerCube,
-        spinnerColor: "pink",
+        spinnerColor: "blue-grey",
         spinnerSize: 140,
         backgroundColor: "purple-2",
-        message: "Espere un momento porfavor...",
+        message: "Espere un momento por favor...",
         messageColor: "black",
       });
       if (props.rp == true) {
@@ -498,10 +983,10 @@ const resumenCotejo = () => {
     if (result.isConfirmed) {
       $q.loading.show({
         spinner: QSpinnerCube,
-        spinnerColor: "pink",
+        spinnerColor: "blue-grey",
         spinnerSize: 140,
         backgroundColor: "purple-2",
-        message: "Espere un momento porfavor...",
+        message: "Espere un momento por favor...",
         messageColor: "black",
       });
       if (props.rp == true) {

@@ -28,6 +28,7 @@ const colors = ref([]);
 
 watch(datos_grafica.value, (val) => {
   if (val != null) {
+    colors.value = [];
     series.value = [];
     rellenarGrafica(val);
   }
@@ -39,15 +40,31 @@ const rellenarGrafica = () => {
   let categorias = [];
   let serie = [];
   datos_grafica.value.datos_Grafica.forEach((element) => {
-    colors.value.push(element.color);
-    categorias.push([element.nombre]);
+    colors.value.push(element.color == "#FFFFFF" ? "#BEBCBC" : element.color);
+    categorias.push(element.nombre);
     serie.push(element.votos);
   });
   series.value.push({
     data: serie,
   });
-
+  let serieMayoria = datos_grafica.value.datos_Grafica.map(
+    (element) => element.votos
+  );
+  let maxNumero = serieMayoria[0];
+  let posicionMax = 0;
+  for (let i = 1; i < serieMayoria.length; i++) {
+    if (serie[i] > maxNumero) {
+      maxNumero = serieMayoria[i];
+      posicionMax = i;
+    }
+  }
+  let categoriaDelMaximo = categorias[posicionMax];
   chartOptions.value = {
+    grid: {
+      row: {
+        colors: ["#fff", "#f2f2f2"],
+      },
+    },
     chart: {
       height: 350,
       type: "bar",
@@ -85,6 +102,23 @@ const rellenarGrafica = () => {
         autoSelected: "zoom",
       },
     },
+    annotations: {
+      points: [
+        {
+          x: maxNumero != 0 ? categoriaDelMaximo : "-",
+          seriesIndex: 0,
+          label: {
+            borderColor: "#775DD0",
+            offsetY: 0,
+            style: {
+              color: "#fff",
+              background: "#775DD0",
+            },
+            text: "Mayoría",
+          },
+        },
+      ],
+    },
     colors: colors.value,
     plotOptions: {
       bar: {
@@ -99,6 +133,7 @@ const rellenarGrafica = () => {
       show: false,
     },
     xaxis: {
+      tickPlacement: "on",
       categories: categorias,
       labels: {
         style: {

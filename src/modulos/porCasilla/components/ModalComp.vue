@@ -22,7 +22,7 @@
               {{
                 resultado_casilla.eleccion == "DIP"
                   ? `Municipio ${resultado_casilla.municipio} - Distrito ${resultado_casilla.distrito}`
-                  : resultado_casilla.eleccion == "REG"
+                  : resultado_casilla.eleccion == "REG" && props.rp == false
                   ? `Municipio ${resultado_casilla.municipio} - ${resultado_casilla.demarcacion}`
                   : `Municipio ${resultado_casilla.municipio}`
               }}
@@ -42,7 +42,9 @@
           </div>
           <q-banner
             v-show="
-              resultados.encabezado.total_Sistema !=
+              resultados.encabezado.total_Sistema >
+                resultados.encabezado.total_Votos ||
+              resultados.encabezado.total_Sistema <
                 resultados.encabezado.total_Votos ||
               resultados.encabezado.total_Votos > resultados.boletas
             "
@@ -53,8 +55,11 @@
             </template>
             <div class="text-white text-bold">
               {{
-                resultados.encabezado.total_Sistema !=
+                resultados.encabezado.total_Sistema >
                 resultados.encabezado.total_Votos
+                  ? "El total de votos capturado es menor al total de votos sistema"
+                  : resultados.encabezado.total_Sistema <
+                    resultados.encabezado.total_Votos
                   ? "El total de votos capturado es mayor al total de votos sistema"
                   : "El total de votos es mayor al número de boletas entregadas"
               }}
@@ -76,7 +81,7 @@
             >
               <q-card-section>
                 <q-avatar style="width: auto" square>
-                  <img :src="partido.logo_Url" />
+                  <img :src="partido.logo_Url" :alt="partido.partido" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-ma-sm">
                   {{ partido.partido }}
@@ -110,7 +115,7 @@
             >
               <q-card-section>
                 <q-avatar square style="width: auto">
-                  <img :src="coalicion.logo_Url" />
+                  <img :src="coalicion.logo_Url" :alt="coalicion.combinacion" />
                 </q-avatar>
                 <div class="text-grey-8 text-bold q-pa-sm">
                   {{ coalicion.combinacion }}
@@ -212,11 +217,16 @@
               <q-btn
                 icon-right="check_circle"
                 v-if="modulo == null ? false : modulo.registrar"
+                :disable="solicitudPendiente != undefined"
                 label="Solicitar corrección"
                 type="submit"
                 color="secondary"
                 class="q-ml-sm"
-              />
+              >
+                <q-tooltip v-if="solicitudPendiente != undefined"
+                  >Ya se solicitó recaptura</q-tooltip
+                >
+              </q-btn>
             </div>
           </div>
         </q-card-section>
@@ -228,7 +238,7 @@
 <script setup>
 import { useQuasar, QSpinnerCube } from "quasar";
 import { storeToRefs } from "pinia";
-import { defineProps, onBeforeMount, ref } from "vue";
+import { defineProps, onBeforeMount, ref, watch } from "vue";
 import { useCasillaStore } from "src/stores/casilla-store";
 import { useAuthStore } from "src/stores/auth-store";
 import { useSolicitudesStore } from "src/stores/solicitudes-store";
@@ -242,19 +252,48 @@ const authStore = useAuthStore();
 const solicitudesStore = useSolicitudesStore();
 const { modulo } = storeToRefs(authStore);
 const { resultados, modal, resultado_casilla } = storeToRefs(casillaStore);
+const { list_Solicitudes_Mr, list_Solicitudes_Rp } =
+  storeToRefs(solicitudesStore);
 const props = defineProps({
+  eleccion_Id: { type: Number, required: true },
   eleccion: { type: String, required: true },
   rp: { type: Boolean, required: true },
 });
 const siglas = "SC-REG-CAS";
 const motivo = ref(null);
+const solicitudPendiente = ref(false);
+
 //--------------------------------------------------------------------
 
 onBeforeMount(() => {
   leerPermisos();
 });
 
+watch(modal, (val) => {
+  if (val == true) {
+    cargarData();
+  }
+});
+
 //----------------------------------------------------------
+
+const cargarData = async () => {
+  if (!props.rp) {
+    await solicitudesStore.load_solicitudes_mr(props.eleccion_Id);
+    solicitudPendiente.value = list_Solicitudes_Mr.value.find(
+      (x) =>
+        x.resultado_Id === resultados.value.encabezado.id &&
+        x.estatus == "Pendiente"
+    );
+  } else {
+    await solicitudesStore.load_solicitudes_rp(props.eleccion_Id);
+    solicitudPendiente.value = list_Solicitudes_Rp.value.includes(
+      (x) =>
+        x.resultado_Id === resultados.value.encabezado.id &&
+        x.estatus == "Pendiente"
+    );
+  }
+};
 
 const leerPermisos = async () => {
   $q.loading.show();
@@ -263,6 +302,7 @@ const leerPermisos = async () => {
 };
 
 const actualizarModal = (valor) => {
+  motivo.value = null;
   casillaStore.initResultados();
   casillaStore.actualizarModal(valor);
 };
@@ -299,10 +339,10 @@ const solicitarCorreccion = async () => {
     if (result.isConfirmed) {
       $q.loading.show({
         spinner: QSpinnerCube,
-        spinnerColor: "pink",
+        spinnerColor: "blue-grey",
         spinnerSize: 140,
         backgroundColor: "purple-2",
-        message: "Espere un momento porfavor...",
+        message: "Espere un momento por favor...",
         messageColor: "black",
       });
       let motivoObj = { motivo: motivo.value };
@@ -316,7 +356,8 @@ const solicitarCorreccion = async () => {
           title: "Correccion solicitada!",
           text: "Su corrección ha sido solicitada",
           icon: "success",
-          cancelButtonText: "Cerrar",
+          showConfirmButton: false,
+          timer: 1500,
         });
       } else {
         $q.loading.hide();

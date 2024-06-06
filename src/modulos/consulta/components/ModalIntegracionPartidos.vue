@@ -66,8 +66,9 @@
                           : 'cancel'
                       "
                       @click="
+                        presente(props.row, 'propietario');
                         props.row.presente_Propietario =
-                          !props.row.presente_Propietario
+                          !props.row.presente_Propietario;
                       "
                     />
                   </div>
@@ -85,8 +86,9 @@
                           : 'cancel'
                       "
                       @click="
+                        presente(props.row, 'suplente');
                         props.row.presente_Suplente =
-                          !props.row.presente_Suplente
+                          !props.row.presente_Suplente;
                       "
                     />
                   </div>
@@ -116,6 +118,12 @@
                 icon-right="sync_alt"
                 color="orange"
               />
+              <q-btn
+                label="Guardar"
+                type="submit"
+                icon-right="save"
+                color="secondary"
+              />
             </div>
           </div>
         </q-card-section>
@@ -126,37 +134,21 @@
 
 <script setup>
 import { storeToRefs } from "pinia";
-import { useQuasar, QSpinnerCube } from "quasar";
+import { useQuasar } from "quasar";
 import { useConsultaStore } from "src/stores/consulta-store";
-import { onBeforeMount, ref } from "vue";
+import { ref } from "vue";
 
 //-----------------------------------------------------------
 
 const $q = useQuasar();
 const consultaStore = useConsultaStore();
-const { modalPartidos, list_Integracion_Partidos } = storeToRefs(consultaStore);
+const {
+  modalPartidos,
+  list_Integracion_Partidos,
+  list_Integracion_Partidos_Guardar,
+} = storeToRefs(consultaStore);
 
 //-----------------------------------------------------------
-
-onBeforeMount(() => {
-  cargarData();
-});
-
-//-----------------------------------------------------------
-
-const cargarData = async () => {
-  $q.loading.show({
-    spinner: QSpinnerCube,
-    spinnerColor: "pink",
-    spinnerSize: 140,
-    backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
-    messageColor: "black",
-  });
-  await consultaStore.loadIntegracionConsejerias();
-  await consultaStore.loadIntegracionPartidosPoliticos();
-  $q.loading.hide();
-};
 
 const actualizarModal = (valor) => {
   consultaStore.actualizarModalPartidos(valor);
@@ -167,7 +159,58 @@ const cambiarRepresentante = (valor) => {
   consultaStore.actualizarModalCambiar(valor);
 };
 
-const onSubmit = () => {};
+const presente = async (row, tipo) => {
+  let resp = null;
+  if (tipo == "propietario") {
+    resp = await consultaStore.integracionPresente(
+      row.id_Propietario,
+      (row.presente_Propietario = !row.presente_Propietario)
+    );
+  } else {
+    resp = await consultaStore.integracionPresente(
+      row.id_Suplente,
+      (row.presente_Suplente = !row.presente_Suplente)
+    );
+  }
+  if (resp.success == true) {
+    $q.notify({
+      position: "top-right",
+      type: "positive",
+    });
+    await consultaStore.loadIntegracionPartidosPoliticos();
+  } else {
+    $q.notify({
+      position: "top-right",
+      type: "negative",
+      message: resp.data,
+    });
+  }
+};
+
+const onSubmit = () => {
+  list_Integracion_Partidos_Guardar.value =
+    list_Integracion_Partidos.value.filter(
+      (x) => x.presente_Propietario == true || x.presente_Suplente == true
+    );
+
+  if (list_Integracion_Partidos_Guardar.value.length > 0) {
+    consultaStore.actualizarModalPartidos(false);
+  } else {
+    $q.dialog({
+      title: "Atención",
+      message: "No ha seleccionado representantes de partido político",
+      icon: "Warning",
+      persistent: true,
+      transitionShow: "scale",
+      transitionHide: "scale",
+      ok: false,
+      cancel: {
+        color: "negative",
+        label: "Regresar",
+      },
+    });
+  }
+};
 
 const columns = [
   {

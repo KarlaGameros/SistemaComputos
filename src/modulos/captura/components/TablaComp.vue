@@ -1,5 +1,5 @@
 <template>
-  <template v-if="loading">
+  <template v-if="loadingGeneral">
     <div class="q-pa-md">
       <div class="absolute-center">
         <q-spinner-cube color="blue-grey" size="10.5em" />
@@ -116,7 +116,7 @@ import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { useCapturaStore } from "src/stores/captura-store";
 import { storeToRefs } from "pinia";
 import TablaComputadaRecuento from "./TablaComputadaRecuento.vue";
-import Swal from "sweetalert2";
+
 //----------------------------------------------------------
 
 const $q = useQuasar();
@@ -125,7 +125,7 @@ const configuracionStore = useConfiguracionStore();
 const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
 const eleccion = ref("DIP");
 const tipo_eleccion_id = ref(null);
-const loading = ref(false);
+const loadingGeneral = ref(false);
 const tab = ref("MR");
 
 //----------------------------------------------------------
@@ -137,36 +137,33 @@ onBeforeMount(() => {
 //----------------------------------------------------------
 
 const cargarData = async () => {
-  loading.value = true;
+  loadingGeneral.value = true;
+  await configuracionStore.loadMunicipios();
   await configuracionStore.loadTipoElecciones();
   await configuracionStore.loadPartidosPoliticos();
   await configuracionStore.loadCoaliciones();
   tipo_eleccion_id.value = list_Tipo_Elecciones.value[0].id;
-  setTimeout(() => {
-    capturaStore.load_cotejo(tipo_eleccion_id.value);
-    capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
-    capturaStore.load_recuento(tipo_eleccion_id.value);
-    capturaStore.load_recuento_rp(tipo_eleccion_id.value);
-  }, 300);
-  loading.value = false;
+  await capturaStore.load_cotejo(tipo_eleccion_id.value);
+  await capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
+  await capturaStore.load_recuento(tipo_eleccion_id.value);
+  await capturaStore.load_recuento_rp(tipo_eleccion_id.value);
+  loadingGeneral.value = false;
 };
 
-const set_tipo_eleccion = (tipo) => {
+const set_tipo_eleccion = async (tipo) => {
+  loadingGeneral.value = true;
   tab.value = "MR";
   eleccion.value = tipo.siglas;
   tipo_eleccion_id.value = tipo.id;
-  switch (eleccion.value) {
-    case "DIP":
-    case "REG":
-      capturaStore.load_cotejo(tipo_eleccion_id.value);
-      capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
-      capturaStore.load_recuento(tipo_eleccion_id.value);
-      capturaStore.load_recuento_rp(tipo_eleccion_id.value);
-      break;
-    case "PYS":
-      capturaStore.load_cotejo(tipo_eleccion_id.value);
-      capturaStore.load_recuento(tipo_eleccion_id.value);
-      break;
+  if (eleccion.value != "PYS") {
+    await capturaStore.load_cotejo(tipo_eleccion_id.value);
+    await capturaStore.load_cotejo_rp(tipo_eleccion_id.value);
+    await capturaStore.load_recuento(tipo_eleccion_id.value);
+    await capturaStore.load_recuento_rp(tipo_eleccion_id.value);
+  } else {
+    await capturaStore.load_cotejo(tipo_eleccion_id.value);
+    await capturaStore.load_recuento(tipo_eleccion_id.value);
   }
+  loadingGeneral.value = false;
 };
 </script>

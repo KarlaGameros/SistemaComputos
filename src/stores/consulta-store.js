@@ -1,9 +1,17 @@
 import { defineStore } from "pinia";
 import { api } from "src/boot/axios";
+import { EncryptStorage } from "storage-encryption";
 
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 export const useConsultaStore = defineStore("useConsultaStore", {
   state: () => ({
     modal: false,
+    tipo_Eleccion: null,
+    tipo_Candidatura: "MR",
+    distrito_Id: null,
+    municipio_Id: null,
+    demarcacion_Id: null,
+    documentoActa: null,
     modalPartidos: false,
     modalCambiarRep: false,
     modalIntegracion: false,
@@ -45,6 +53,7 @@ export const useConsultaStore = defineStore("useConsultaStore", {
       paquetes: 0,
     },
     list_Integracion_Partidos: [],
+    list_Integracion_Partidos_Guardar: [],
     list_Integracion_Consejerias: [],
   }),
   actions: {
@@ -92,6 +101,145 @@ export const useConsultaStore = defineStore("useConsultaStore", {
       this.resultados.grupos_Trabajo = 0;
     },
 
+    async downloadActa(
+      eleccion,
+      eleccion_Id,
+      distrito_Id,
+      municipio_Id,
+      demarcacion_Id
+    ) {
+      try {
+        this.documentoActa = "";
+        let resp = null;
+        if (eleccion == "DIP") {
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/PDF/GeneraActa?TipoEleccion_Id=${eleccion_Id}&Distrito_Id=${distrito_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          } else {
+            resp = await api.get(
+              `/PDF/GeneraActa?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id}&Distrito_Id=${distrito_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          }
+        } else if (eleccion == "PYS") {
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/PDF/GeneraActa?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          } else {
+            resp = await api.get(
+              `/PDF/GeneraActa?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id}`,
+              {
+                responseType: "blob",
+              }
+            );
+          }
+        } else {
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/PDF/GeneraActa?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id.value}&Demarcacion_Id=${demarcacion_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          } else {
+            resp = await api.get(
+              `/PDF/GeneraActa?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id}&Demarcacion_Id=${demarcacion_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          }
+        }
+
+        if (resp.status == 200) {
+          let blob = new window.Blob([resp.data], {
+            type: "application/pdf",
+          });
+          this.documentoActa = window.URL.createObjectURL(blob);
+          return { success: true };
+        } else {
+          return {
+            success: false,
+            data: "Error al descargar archivo, intentelo de nuevo",
+          };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrio un error, intentelo de nuevo. Si el error persiste contacte a soporte",
+        };
+      }
+    },
+
+    //-----------------------------------------------------------
+    async downloadActaRP(eleccion, eleccion_Id, municipio_Id, distrito_Id) {
+      try {
+        this.documentoActa = "";
+        let resp = null;
+        if (eleccion == "DIP") {
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/PDF/GeneraActaRP?TipoEleccion_Id=${eleccion_Id}`,
+              {
+                responseType: "blob",
+              }
+            );
+          } else {
+            resp = await api.get(
+              `/PDF/GeneraActaRP?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id}&Distrito_Id=${distrito_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          }
+        } else {
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/PDF/GeneraActaRP?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          } else {
+            resp = await api.get(
+              `/PDF/GeneraActaRP?TipoEleccion_Id=${eleccion_Id}&Municipio_Id=${municipio_Id.value}`,
+              {
+                responseType: "blob",
+              }
+            );
+          }
+        }
+
+        if (resp.status == 200) {
+          let blob = new window.Blob([resp.data], {
+            type: "application/pdf",
+          });
+          this.documentoActa = window.URL.createObjectURL(blob);
+          return { success: true };
+        } else {
+          return {
+            success: false,
+            data: "Error al descargar archivo, intentelo de nuevo",
+          };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrio un error, intentelo de nuevo. Si el error persiste contacte a soporte",
+        };
+      }
+    },
+
     //-----------------------------------------------------------
     async createNuevoRepresentante(representacion) {
       try {
@@ -131,17 +279,35 @@ export const useConsultaStore = defineStore("useConsultaStore", {
       try {
         let resp = null;
         if (eleccion == "DIP") {
-          resp = await api.get(
-            `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Distrito=${distrito_id.value}`
-          );
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Distrito=${distrito_id.value}`
+            );
+          } else {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id}&Distrito=${distrito_id.value}`
+            );
+          }
         } else if (eleccion == "PYS") {
-          resp = await api.get(
-            `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id.value}`
-          );
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id.value}`
+            );
+          } else {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id}`
+            );
+          }
         } else if (eleccion == "REG") {
-          resp = await api.get(
-            `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id.value}&Demarcacion=${demarcacion_id.value}`
-          );
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id.value}&Demarcacion=${demarcacion_id.value}`
+            );
+          } else {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id}&Demarcacion=${demarcacion_id.value}`
+            );
+          }
         }
         if (resp.status == 200) {
           const { success, data } = resp.data;
@@ -178,13 +344,19 @@ export const useConsultaStore = defineStore("useConsultaStore", {
     },
 
     //-----------------------------------------------------------
-    async cosultaResultadosRP(eleccion_id, municipio_id) {
+    async cosultaResultadosRP(eleccion_id, municipio_id, distrito_id) {
       try {
         let resp = null;
-        if (municipio_id == null) {
-          resp = await api.get(
-            `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}`
-          );
+        if (distrito_id != null) {
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}`
+            );
+          } else {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}&Municipio=${municipio_id}&Distrito=${distrito_id.value}`
+            );
+          }
         } else {
           resp = await api.get(
             `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}&Municipio=${municipio_id.value}`
@@ -240,8 +412,8 @@ export const useConsultaStore = defineStore("useConsultaStore", {
             partido: element.partido,
             logo_Partido: element.logo_Partido,
             activo: element.activo,
-            presente_Propietario: false,
-            presente_Suplente: false,
+            presente_Propietario: element.presente_Propietario,
+            presente_Suplente: element.presente_Suplente,
             nombre_Completo_Propietario: element.nombre_Completo_Propietario,
             puesto_Propietario: element.puesto_Propietario,
             sexo_Propietario: element.sexo_Propietario,
@@ -278,9 +450,27 @@ export const useConsultaStore = defineStore("useConsultaStore", {
             sexo: element.sexo,
             orden: element.orden,
             activo: element.activo,
-            presente: false,
+            presente: element.presente,
           };
         });
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    //-----------------------------------------------------------
+    async integracionPresente(id, presente) {
+      try {
+        const resp = await api.get(
+          `/IntegracionesOficinas/RepresentastesPresentes/${id}?Presente=${presente}`
+        );
+        if (resp.status == 200) {
+          const { success, data } = resp.data;
+          return { success: success, data: data };
+        }
       } catch (error) {
         return {
           success: false,

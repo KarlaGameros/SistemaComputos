@@ -63,6 +63,7 @@
                   >
                     <div v-if="col.name === 'id'">
                       <q-btn
+                        v-if="modulo == null ? false : modulo.registrar"
                         flat
                         round
                         color="pink"
@@ -118,6 +119,7 @@
                   >
                     <div v-if="col.name === 'id'">
                       <q-btn
+                        v-if="modulo == null ? false : modulo.leer"
                         :color="
                           props.row.total_Sistema != props.row.total_Capturado
                             ? 'white'
@@ -150,6 +152,7 @@ import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
 import { useVotoAnticipadoStore } from "src/stores/votoAnticipado-store";
 import { useRerservasStore } from "src/stores/reservas-store";
+import { useAuthStore } from "src/stores/auth-store";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
@@ -158,6 +161,8 @@ const $q = useQuasar();
 const reservasStore = useRerservasStore();
 const configuracionStore = useConfiguracionStore();
 const votoAnticipadoStore = useVotoAnticipadoStore();
+const authStore = useAuthStore();
+const { modulo } = storeToRefs(authStore);
 const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
 const {
   list_va_eleccion,
@@ -174,11 +179,24 @@ const tipo_Computo = ref(null);
 const grupo_Trabajo = ref(null);
 const punto_Recuento = ref(null);
 const tab = ref("pendientes");
+const siglas = "SC-CAP-VA";
 
 //----------------------------------------------------------
 
 onBeforeMount(() => {
+  leerPermisos();
   cargarData();
+});
+
+watch(tab, (val) => {
+  if (val != null) {
+    pagination.value = {
+      sortBy: "desc",
+      descending: false,
+      page: 1,
+      rowsPerPage: 5,
+    };
+  }
 });
 
 watch(reload, (val) => {
@@ -189,6 +207,12 @@ watch(reload, (val) => {
 });
 
 //----------------------------------------------------------
+
+const leerPermisos = async () => {
+  $q.loading.show();
+  await authStore.loadModulo(siglas);
+  $q.loading.hide();
+};
 
 const limpiar = () => {
   tipo_Computo.value = null;
@@ -212,22 +236,32 @@ const set_tipo_eleccion = async (tipo) => {
   tab.value = "pendientes";
   eleccion.value = tipo.siglas;
   tipo_eleccion_id.value = tipo.id;
+  evalua_columnas();
   await votoAnticipadoStore.load_va_by_eleccion(tipo_eleccion_id.value);
   await votoAnticipadoStore.load_va_resultados_by_eleccion(
     tipo_eleccion_id.value
   );
-  evalua_columnas();
+  pagination.value = {
+    sortBy: "desc",
+    descending: false,
+    page: 1,
+    rowsPerPage: 5,
+  };
 };
 
 const evalua_columnas = () => {
   switch (eleccion.value) {
     case "DIP":
-      visible_columns.value = ["usuario", "distrito", "listado_Nominal", "id"];
+      visible_columns.value = [
+        "distrito",
+        "municipio",
+        "listado_Nominal",
+        "id",
+      ];
       visible_columns_pendientes.value = [
         "usuario",
+        "municipio",
         "distrito",
-        "seccion",
-        "casilla",
         "tipo",
         "total_Sistema",
         "total_Capturado",
@@ -236,12 +270,10 @@ const evalua_columnas = () => {
       ];
       break;
     case "PYS":
-      visible_columns.value = ["usuario", "municipio", "listado_Nominal", "id"];
+      visible_columns.value = ["municipio", "listado_Nominal", "id"];
       visible_columns_pendientes.value = [
         "usuario",
         "municipio",
-        "seccion",
-        "casilla",
         "tipo",
         "total_Sistema",
         "total_Capturado",
@@ -251,7 +283,6 @@ const evalua_columnas = () => {
       break;
     case "REG":
       visible_columns.value = [
-        "usuario",
         "municipio",
         "demarcacion",
         "listado_Nominal",
@@ -261,8 +292,6 @@ const evalua_columnas = () => {
         "usuario",
         "municipio",
         "demarcacion",
-        "seccion",
-        "casilla",
         "tipo",
         "total_Sistema",
         "total_Capturado",
@@ -282,10 +311,10 @@ const evalua_columnas = () => {
 const verResultados = async (row) => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
-    backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
+    backgroundColor: "blue-grey",
+    message: "Espere un momento por favor...",
     messageColor: "black",
   });
   encabezado.value.distrito = row.distrito;
@@ -293,7 +322,7 @@ const verResultados = async (row) => {
   encabezado.value.demarcacion = row.demarcacion;
   encabezado.value.seccion = row.seccion;
   encabezado.value.casilla = row.casilla;
-  encabezado.value.eleccion = eleccion;
+  encabezado.value.eleccion = eleccion.value;
   await votoAnticipadoStore.cosultaResultados(row.id, row.boletas);
   votoAnticipadoStore.actualizarVisualizar(true);
   votoAnticipadoStore.actualizarModal(true);
@@ -305,7 +334,9 @@ const inicializar = async (row) => {
   encabezado.value.distrito = row.distrito;
   encabezado.value.municipio = row.municipio;
   encabezado.value.demarcacion = row.demarcacion;
-  encabezado.value.eleccion = row.tipo_Eleccion;
+  encabezado.value.seccion = row.seccion;
+  encabezado.value.casilla = row.casilla;
+  encabezado.value.eleccion = eleccion.value;
   Swal.fire({
     title: "Tipo de cómputo",
     input: "select",
@@ -353,24 +384,24 @@ const recuentoAlert = async (row) => {
     confirmButtonText: "Si",
   }).then((result) => {
     if (!result.isConfirmed) {
-      grupoTrabajoAlert();
+      grupoTrabajoAlert(row);
     } else {
-      reservar(row.id);
+      reservar(row);
     }
   });
 };
 
-const reservar = async (id) => {
+const reservar = async (row) => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
     backgroundColor: "purple-2",
     message: "Espere un momento por favor...",
     messageColor: "black",
   });
   let resp = null;
-  resp = await reservasStore.reservarMr(id);
+  resp = await reservasStore.reservarVA(row.id);
   if (resp.success == true) {
     $q.loading.hide();
     Swal.fire({
@@ -379,6 +410,7 @@ const reservar = async (id) => {
       showConfirmButton: false,
       timer: 1500,
     });
+    await votoAnticipadoStore.load_va_by_eleccion(tipo_eleccion_id.value);
   } else {
     $q.loading.hide();
     Swal.fire({
@@ -389,6 +421,7 @@ const reservar = async (id) => {
     });
   }
 };
+
 const grupoTrabajoAlert = (row) => {
   Swal.fire({
     title: "Grupo de trabajo",
@@ -475,10 +508,10 @@ const resumen = (row) => {
     if (result.isConfirmed) {
       $q.loading.show({
         spinner: QSpinnerCube,
-        spinnerColor: "pink",
+        spinnerColor: "blue-grey",
         spinnerSize: 140,
         backgroundColor: "purple-2",
-        message: "Espere un momento porfavor...",
+        message: "Espere un momento por favor...",
         messageColor: "black",
       });
       await votoAnticipadoStore.incicializar_resultados(
@@ -566,13 +599,6 @@ const columnsPendientes = [
     align: "center",
     label: "Demarcación",
     field: "demarcacion",
-    sortable: true,
-  },
-  {
-    name: "casilla",
-    align: "center",
-    label: "Casilla",
-    field: "casilla",
     sortable: true,
   },
   {

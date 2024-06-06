@@ -10,14 +10,14 @@
 </template>
 
 <script setup>
-import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
-import { onMounted, watch, ref } from "vue";
+import { onMounted, ref } from "vue";
+import { useDasboardStore } from "src/stores/dasboard-store";
 
 //----------------------------------------------------------
 
-const configuracionStore = useConfiguracionStore();
-const { list_Municipios } = storeToRefs(configuracionStore);
+const dasboardStore = useDasboardStore();
+const { avance } = storeToRefs(dasboardStore);
 const category = ref([]);
 const series = ref([]);
 
@@ -29,43 +29,33 @@ onMounted(() => {
 
 //----------------------------------------------------------
 
-watch(list_Municipios, (val) => {
-  series.value = [];
-  if (val.length > 0) {
-    rellenarGrafica();
-  }
-});
-
-//----------------------------------------------------------
-
 const rellenarGrafica = () => {
-  if (category.value.length == 0) {
-    list_Municipios.value.forEach((x) => category.value.push(x.label));
-  }
-  series.value.push(
+  series.value = [];
+  category.value = [];
+  series.value = [
     {
       name: "DIP MR",
-      data: [44, 55],
+      data: Object.values(avance.value.general_Diputaciones),
     },
     {
       name: "DIP RP",
-      data: [],
+      data: Object.values(avance.value.general_Diputaciones_RP),
     },
     {
       name: "PYS",
-      data: [35],
+      data: Object.values(avance.value.general_PyS),
     },
     {
       name: "REG MR",
-      data: [],
+      data: Object.values(avance.value.general_Regidurias),
     },
     {
       name: "REG RP",
-      data: [35, 41],
-    }
-  );
+      data: Object.values(avance.value.general_Regidurias_RP),
+    },
+  ];
 };
-
+rellenarGrafica();
 const options = {
   title: {
     text: "Estadístico estatal",
@@ -128,7 +118,10 @@ const options = {
     colors: ["transparent"],
   },
   xaxis: {
-    categories: category.value,
+    categories: Object.values(avance.value.municipios.map((x) => x.nombre)),
+  },
+  yaxis: {
+    max: 100,
   },
   fill: {
     opacity: 1,

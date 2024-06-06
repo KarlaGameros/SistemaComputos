@@ -6,7 +6,9 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     loading: false,
     modal: false,
     list_por_casilla: [],
+    list_por_casilla_filtro: [],
     list_por_casilla_rp: [],
+    list_por_casilla_rp_filtro: [],
     resultado_casilla: {
       id: null,
       distrito: null,
@@ -19,6 +21,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
       total_Sistema: null,
       total_Capturado: null,
       tipoCandidatura: null,
+      demarcacion: null,
     },
     resultados: {
       boletas: null,
@@ -63,6 +66,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     async load_por_casilla(tipo_eleccion_id) {
       try {
         this.list_por_casilla = [];
+        this.list_por_casilla_filtro = [];
         this.loading = true;
         const resp = await api.get(
           `/ResultadoComputos/ResultadosByTipoEleccion/${tipo_eleccion_id}`
@@ -85,10 +89,14 @@ export const useCasillaStore = defineStore("useCasillaStore", {
                 boletas: element.boletas,
               };
             });
+            this.list_por_casilla_filtro = this.list_por_casilla;
           }
         }
       } catch (error) {
-        console.error(error);
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
       } finally {
         this.loading = false;
       }
@@ -102,7 +110,8 @@ export const useCasillaStore = defineStore("useCasillaStore", {
       casilla,
       tipo,
       tipoCandidatura,
-      eleccion
+      eleccion,
+      demarcacion
     ) {
       try {
         this.resultado_casilla.eleccion = eleccion;
@@ -113,6 +122,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
         this.resultado_casilla.casilla = casilla;
         this.resultado_casilla.tipo = tipo;
         this.resultado_casilla.tipoCandidatura = tipoCandidatura;
+        this.resultado_casilla.demarcacion = demarcacion;
       } catch (error) {
         return {
           success: false,
@@ -179,7 +189,10 @@ export const useCasillaStore = defineStore("useCasillaStore", {
           }
         }
       } catch (error) {
-        console.error(error);
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
       } finally {
         this.loading = false;
       }
@@ -190,6 +203,7 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     async load_por_casilla_rp(tipo_eleccion_id) {
       try {
         this.list_por_casilla_rp = [];
+        this.list_por_casilla_rp_filtro = [];
         this.loading = true;
         const resp = await api.get(
           `/ResultadoComputos/ResultadosByTipoEleccionRp/${tipo_eleccion_id}`
@@ -212,10 +226,14 @@ export const useCasillaStore = defineStore("useCasillaStore", {
                 boletas: element.boletas,
               };
             });
+            this.list_por_casilla_rp_filtro = this.list_por_casilla_rp;
           }
         }
       } catch (error) {
-        console.error(error);
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
       } finally {
         this.loading = false;
       }
@@ -264,7 +282,10 @@ export const useCasillaStore = defineStore("useCasillaStore", {
           }
         }
       } catch (error) {
-        console.error(error);
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
       } finally {
         this.loading = false;
       }

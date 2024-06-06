@@ -20,6 +20,11 @@ const routes = [
         component: () => import("../modulos/reservas/pages/IndexPage"),
       },
       {
+        path: "/reservasVA",
+        name: "reservasVA",
+        component: () => import("../modulos/reservasVA/pages/IndexPage"),
+      },
+      {
         path: "/consulta",
         name: "consulta",
         component: () => import("../modulos/consulta/pages/IndexPage"),
@@ -43,6 +48,11 @@ const routes = [
         path: "/solicitudes",
         name: "solicitudes",
         component: () => import("../modulos/solicitudes/pages/IndexPage"),
+      },
+      {
+        path: "/solicitudesVA",
+        name: "solicitudesVA",
+        component: () => import("../modulos/solicitudesVA/pages/IndexPage.vue"),
       },
       {
         path: "/panel",

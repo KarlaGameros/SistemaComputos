@@ -20,7 +20,9 @@
           dense
           :icon="!modo ? 'dark_mode' : 'light_mode'"
           @click="modoOscuro(!modo)"
-        />
+        >
+          <q-tooltip>{{ !modo ? "Modo oscuro" : "Modo claro" }}</q-tooltip>
+        </q-btn>
         <q-btn flat round dense icon="apps" @click="show" />
       </q-toolbar>
     </q-header>
@@ -77,19 +79,40 @@
           </q-item-section>
           <q-item-section> Captura </q-item-section>
         </q-item>
-        <q-item
-          v-if="CatalogosConList.some((element) => element == 'SC-REG-RES')"
-          clickable
-          v-ripple
-          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
-          :to="{ name: 'reservas' }"
-          active-class="text-pink-ieen-1"
+        <q-expansion-item
+          v-if="CatalogosConList.length > 0"
+          expand-separator
+          icon="collections_bookmark"
+          label="Reservas"
+          class="text-grey-8 label-title text-bold"
         >
-          <q-item-section avatar>
-            <q-icon name="content_copy" />
-          </q-item-section>
-          <q-item-section> Reservas </q-item-section>
-        </q-item>
+          <q-item
+            v-if="CatalogosConList.some((element) => element == 'SC-REG-RES')"
+            clickable
+            v-ripple
+            :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
+            :to="{ name: 'reservas' }"
+            active-class="text-pink-ieen-1"
+          >
+            <q-item-section avatar>
+              <q-icon name="content_copy" />
+            </q-item-section>
+            <q-item-section> Reservas </q-item-section>
+          </q-item>
+          <q-item
+            v-if="CatalogosConList.some((element) => element == 'SC-RES-VA')"
+            clickable
+            v-ripple
+            :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
+            :to="{ name: 'reservasVA' }"
+            active-class="text-pink-ieen-1"
+          >
+            <q-item-section avatar>
+              <q-icon name="content_copy" />
+            </q-item-section>
+            <q-item-section> Reservas voto anticipado</q-item-section>
+          </q-item>
+        </q-expansion-item>
         <q-item
           v-if="CatalogosConList.some((element) => element == 'SC-CON-RES')"
           clickable
@@ -129,19 +152,41 @@
           </q-item-section>
           <q-item-section> Mayoría </q-item-section>
         </q-item>
-        <q-item
+        <q-expansion-item
           v-if="CatalogosConList.some((element) => element == 'SC-REG-SOL')"
-          clickable
-          v-ripple
-          :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
-          :to="{ name: 'solicitudes' }"
-          active-class="text-pink-ieen-1"
+          expand-separator
+          icon="checklist"
+          label="Solicitudes"
+          class="text-grey-8 label-title text-bold"
         >
-          <q-item-section avatar>
-            <q-icon name="clear_all" />
-          </q-item-section>
-          <q-item-section> Solicitudes </q-item-section>
-        </q-item>
+          <q-item
+            v-if="CatalogosConList.some((element) => element == 'SC-REG-SOL')"
+            clickable
+            v-ripple
+            :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
+            :to="{ name: 'solicitudes' }"
+            active-class="text-pink-ieen-1"
+          >
+            <q-item-section avatar>
+              <q-icon name="clear_all" />
+            </q-item-section>
+            <q-item-section> Solicitudes </q-item-section>
+          </q-item>
+          <q-item
+            v-if="CatalogosConList.some((element) => element == 'SC-REG-SOL')"
+            clickable
+            v-ripple
+            :class="$q.dark.isActive ? 'text-white' : 'text-grey-8'"
+            :to="{ name: 'solicitudesVA' }"
+            active-class="text-pink-ieen-1"
+          >
+            <q-item-section avatar>
+              <q-icon name="clear_all" />
+            </q-item-section>
+            <q-item-section> Solicitudes voto anticipado </q-item-section>
+          </q-item>
+        </q-expansion-item>
+
         <q-item
           v-if="CatalogosConList.some((element) => element == 'SC-PAN-RES')"
           clickable
@@ -156,6 +201,17 @@
           <q-item-section> Panel </q-item-section>
         </q-item>
       </q-list>
+      <!-- <div class="absolute-bottom">
+        <div class="text-subtitle1 text-center q-pb-lg">
+          Consulta aquí el
+          <a
+            class="text-bold text-pink"
+            target="blanck"
+            href="https://ieenayarit.org/PDF/Computos/Manual_Computos.pdf"
+            >Manual de usuario <q-icon name="menu_book" />
+          </a>
+        </div>
+      </div> -->
     </q-drawer>
     <q-page-container>
       <router-view />
@@ -266,8 +322,7 @@ const loadMenu = async () => {
   await authStore.loadModulos();
   await authStore.loadPerfil();
   await authStore.loadUsuario();
-  console.log("key", encryptStorage.decrypt("key"));
-  console.log("modulos", modulos.value);
+  await authStore.loadOficina();
   modulos.value.forEach((element) => {
     switch (element.siglas_Modulo) {
       case "SC-CAP-RES":
@@ -275,6 +330,9 @@ const loadMenu = async () => {
         break;
       case "SC-REG-RES":
         CatalogosConList.value.push("SC-REG-RES");
+        break;
+      case "SC-RES-VA":
+        CatalogosConList.value.push("SC-RES-VA");
         break;
       case "SC-CON-RES":
         CatalogosConList.value.push("SC-CON-RES");

@@ -293,7 +293,7 @@ import { storeToRefs } from "pinia";
 import { useAuthStore } from "src/stores/auth-store";
 import { useSolicitudesStore } from "src/stores/solicitudes-store";
 import Swal from "sweetalert2";
-import ModalComp from "../../porCasilla/components/ModalComp.vue";
+import ModalComp from "../../solicitudes/components/ModalComp.vue";
 
 //-----------------------------------------------------------
 
@@ -328,8 +328,10 @@ const visible_columns = ref([
   "motivo",
   "distrito",
   "casilla",
+  "seccion",
   "aprobado",
   "fecha_Solicitud",
+  "fecha_Accion",
   "id",
 ]);
 const columns = [
@@ -376,6 +378,13 @@ const columns = [
     sortable: true,
   },
   {
+    name: "seccion",
+    align: "center",
+    label: "Sección",
+    field: "seccion",
+    sortable: true,
+  },
+  {
     name: "casilla",
     align: "center",
     label: "Casilla",
@@ -394,6 +403,13 @@ const columns = [
     align: "center",
     label: "Fecha de solicitud",
     field: "fecha_Solicitud",
+    sortable: true,
+  },
+  {
+    name: "fecha_Accion",
+    align: "center",
+    label: "Fecha acción",
+    field: "fecha_Accion",
     sortable: true,
   },
   {
@@ -436,8 +452,10 @@ const evalua_columnas = () => {
         "motivo",
         "distrito",
         "casilla",
+        "seccion",
         "aprobado",
         "fecha_Solicitud",
+        "fecha_Accion",
         "id",
       ];
       break;
@@ -448,8 +466,10 @@ const evalua_columnas = () => {
         "motivo",
         "municipio",
         "casilla",
+        "seccion",
         "aprobado",
         "fecha_Solicitud",
+        "fecha_Accion",
         "id",
       ];
       break;
@@ -461,8 +481,10 @@ const evalua_columnas = () => {
         "municipio",
         "demarcacion",
         "casilla",
+        "seccion",
         "aprobado",
         "fecha_Solicitud",
+        "fecha_Accion",
         "id",
       ];
       break;
@@ -497,27 +519,30 @@ const cargarData = async () => {
 const verCaptura = async (row, tipo) => {
   $q.loading.show({
     spinner: QSpinnerCube,
-    spinnerColor: "pink",
+    spinnerColor: "blue-grey",
     spinnerSize: 140,
     backgroundColor: "purple-2",
-    message: "Espere un momento porfavor...",
+    message: "Espere un momento por favor...",
     messageColor: "black",
   });
   casillaStore.initResultados();
   await casillaStore.load_por_casilla_id(
     row.id,
+    row.distrito,
     row.municipio,
     row.seccion,
     row.casilla,
     row.tipo,
-    tipo
+    tipo,
+    eleccion.value,
+    row.demarcacion
   );
   if (tipo == "MR") {
     await casillaStore.load_resultados_mr(row.resultado_Id);
   } else {
     await casillaStore.load_resultados_rp(row.resultado_RP_Id);
   }
-  casillaStore.actualizarModal(true);
+  solicitudesStore.actualizarModal(true);
   $q.loading.hide();
 };
 
@@ -535,9 +560,11 @@ const aprobarSolicitud = (row) => {
       let resp = await solicitudesStore.aprobarSolicitud(row.id);
       if (resp.success == true) {
         Swal.fire({
-          title: "Aprobada",
-          text: "La solicitud de corrección ha sido aprobada.",
+          title: "Solicitud aprobada",
           icon: "success",
+          title: "La solicitud de corrección ha sido aprobada.",
+          showConfirmButton: false,
+          timer: 1500,
         });
         await solicitudesStore.load_solicitudes_mr(eleccion_Id.value);
         await solicitudesStore.load_solicitudes_rp(eleccion_Id.value);
@@ -565,9 +592,11 @@ const rechazarSolicitud = (row) => {
       let resp = await solicitudesStore.rechazarSolicitud(row.id);
       if (resp.success == true) {
         Swal.fire({
+          icon: "success",
           title: "Solicitud rechazada",
           text: "Su solicitud de corrección ha sido rechazada.",
-          icon: "success",
+          showConfirmButton: false,
+          timer: 1500,
         });
         await solicitudesStore.load_solicitudes_mr(eleccion_Id.value);
         await solicitudesStore.load_solicitudes_rp(eleccion_Id.value);
@@ -586,17 +615,14 @@ const filtrar = (list_Solicitudes, filtro) => {
     let cumple = true;
     if (filtro.estatus !== undefined) {
       if (filtro.estatus == "Todos") {
-        cumple = cumple && item.validado === item.validado;
+        cumple = cumple && item.estatus === item.estatus;
       } else {
-        if (filtro.estatus == "Validado") {
-          cumple = cumple && item.validado === true;
-        } else if (filtro.estatus == "Sin validar") {
-          cumple = cumple && item.validado === false;
+        if (filtro.estatus == "Solicitud aprobada") {
+          cumple = cumple && item.aprobado === true;
+        } else if (filtro.estatus == "Solicitud pendiente") {
+          cumple = cumple && item.aprobado === null;
         } else {
-          cumple =
-            cumple &&
-            item.informacion_Pausada != null &&
-            item.informacion_Pausada != "";
+          cumple = cumple && item.aprobado == false;
         }
       }
     }

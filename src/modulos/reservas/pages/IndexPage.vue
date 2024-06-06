@@ -22,4 +22,3 @@
 <script setup>
 import TablaComp from "../components/TablaComp.vue";
 </script>
-<style></style>

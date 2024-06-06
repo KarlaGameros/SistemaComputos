@@ -1,6 +1,6 @@
 <template>
   <q-dialog
-    v-model="modal"
+    v-model="modalVa"
     persistent
     transition-show="scale"
     transition-hide="scale"
@@ -35,6 +35,14 @@
           <div class="row bg-blue-grey-3 q-pl-md text-bold text-h6">
             Total de votos sistema: {{ totalVotos }}
           </div>
+          <q-banner v-show="visible" class="bg-red">
+            <template v-slot:avatar>
+              <q-icon name="warning" color="white" />
+            </template>
+            <div class="text-white text-bold">
+              El total de votos es mayor al número de boletas entregadas
+            </div>
+          </q-banner>
         </div>
         <q-card-section>
           <div
@@ -45,7 +53,7 @@
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
-              v-for="(partido, index) in resultados.partidos"
+              v-for="(partido, index) in resultadosVa.partidos"
               :key="partido"
               style="border-radius: 8px"
               class="my-card text-center no-box-shadow"
@@ -72,7 +80,7 @@
             </q-card>
           </div>
         </q-card-section>
-        <q-card-section v-if="props.rp == false">
+        <q-card-section>
           <div
             class="bg-white q-pa-sm text-bold text-grey-8 text-center text-h6"
           >
@@ -81,7 +89,7 @@
           <br />
           <div class="row q-gutter-md q-pl-xl" style="margin: 20px">
             <q-card
-              v-for="(coalicion, index) in resultados.coaliciones"
+              v-for="(coalicion, index) in resultadosVa.coaliciones"
               :key="coalicion"
               style="border-radius: 8px"
               class="my-card text-center no-box-shadow"
@@ -131,7 +139,8 @@
                 <q-input
                   class="text-h6"
                   v-model="
-                    resultados.encabezado.total_Votos_Candidatos_No_Registrados
+                    resultadosVa.encabezado
+                      .total_Votos_Candidatos_No_Registrados
                   "
                   mask="###"
                   :name="`myTextTotales1`"
@@ -153,7 +162,7 @@
               <q-card-section>
                 <q-input
                   class="text-h6"
-                  v-model="resultados.encabezado.total_Votos_Nulos"
+                  v-model="resultadosVa.encabezado.total_Votos_Nulos"
                   mask="###"
                   :name="`myTextTotales2`"
                   dense
@@ -174,7 +183,7 @@
               <q-card-section>
                 <q-input
                   class="text-h6"
-                  v-model="resultados.encabezado.total_Votos"
+                  v-model="resultadosVa.encabezado.total_Votos"
                   mask="###"
                   :name="`myTextTotales3`"
                   dense
@@ -189,11 +198,13 @@
           <div class="col-12 justify-end">
             <div class="text-right q-gutter-xs">
               <q-btn
+                icon-right="cancel"
                 label="Cancelar"
                 color="red"
                 @click="actualizarModal(false)"
               />
               <q-btn
+                icon-right="check_circle"
                 v-if="modulo == null ? false : modulo.registrar"
                 label="Guardar"
                 type="submit"
@@ -211,33 +222,23 @@
 <script setup>
 import { useQuasar, QSpinnerCube } from "quasar";
 import { storeToRefs } from "pinia";
-import {
-  computed,
-  defineProps,
-  onBeforeMount,
-  onMounted,
-  ref,
-  watchEffect,
-} from "vue";
+import { computed, defineProps, onMounted, ref, watchEffect } from "vue";
 import { useAuthStore } from "src/stores/auth-store";
 import { useRerservasStore } from "src/stores/reservas-store";
-import { useCapturaStore } from "src/stores/captura-store";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
 
 const $q = useQuasar();
 const reservasStore = useRerservasStore();
-const capturaStore = useCapturaStore();
 const authStore = useAuthStore();
 const { modulo } = storeToRefs(authStore);
-const { modal, encabezado } = storeToRefs(reservasStore);
-const { resultados } = storeToRefs(capturaStore);
+const { modalVa, encabezado, resultadosVa } = storeToRefs(reservasStore);
 const props = defineProps({
   eleccion: { type: String, required: true },
-  rp: { type: Boolean, required: true },
 });
-const siglas = "SC-REG-RES";
+const siglas = "SC-RES-VA";
+const visible = ref(false);
 const totalVotos = ref(0);
 
 //----------------------------------------------------------
@@ -253,39 +254,48 @@ const leerPermisos = async () => {
 };
 
 watchEffect(() => {
+  if (
+    totalVotos.value > resultadosVa.value.boletas ||
+    resultadosVa.value.encabezado.total_Votos > resultadosVa.value.boletas
+  ) {
+    visible.value = true;
+  } else {
+    visible.value = false;
+  }
+
   let total = 0;
-  for (let partido of resultados.value.partidos) {
+  for (let partido of resultadosVa.value.partidos) {
     if (partido.votos == "" || partido.votos == NaN) {
       partido.votos = 0;
     }
     total += parseInt(partido.votos);
   }
-  for (let coalicion of resultados.value.coaliciones) {
+  for (let coalicion of resultadosVa.value.coaliciones) {
     if (coalicion.votos == "" || coalicion.votos == NaN) {
       coalicion.votos = 0;
     }
     total += parseInt(coalicion.votos);
   }
   if (
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
+    resultadosVa.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
   ) {
     total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+      resultadosVa.value.encabezado.total_Votos_Candidatos_No_Registrados
     );
   }
-  if (resultados.value.encabezado.total_Votos_Nulos !== "") {
-    total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
+  if (resultadosVa.value.encabezado.total_Votos_Nulos !== "") {
+    total += parseInt(resultadosVa.value.encabezado.total_Votos_Nulos);
   }
   totalVotos.value = total;
 });
 
 const actualizarModal = (valor) => {
-  reservasStore.actualizarModal(valor);
+  reservasStore.actualizarModalVa(valor);
 };
 
 function getFocus(index, tipo) {
-  let elementosPartidos = resultados.value.partidos.length;
-  let elementosCoaliciones = resultados.value.coaliciones.length;
+  let elementosPartidos = resultadosVa.value.partidos.length;
+  let elementosCoaliciones = resultadosVa.value.coaliciones.length;
   if (tipo == "coalicion") {
     if (elementosCoaliciones == index + 1) {
       let docu = document.getElementsByName(`myTextTotales1`);
@@ -323,22 +333,22 @@ const onSubmit = async () => {
     transitionShow: "scale",
     transitionHide: "scale",
     ok: {
-      color: "positive",
+      color: "secondary",
       label: "Sí, enviar!",
     },
     cancel: {
-      color: "negative",
+      color: "red",
       label: " No, Cancelar!",
     },
   }).onOk(async () => {
     let total = 0;
-    for (let partido of resultados.value.partidos) {
+    for (let partido of resultadosVa.value.partidos) {
       if (partido.votos == "" || partido.votos == NaN) {
         partido.votos = 0;
       }
       total += parseInt(partido.votos);
     }
-    for (let coalicion of resultados.value.coaliciones) {
+    for (let coalicion of resultadosVa.value.coaliciones) {
       if (coalicion.votos == "" || coalicion.votos == NaN) {
         coalicion.votos = 0;
       }
@@ -346,19 +356,19 @@ const onSubmit = async () => {
     }
 
     total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
-        ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+      resultadosVa.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
+        ? resultadosVa.value.encabezado.total_Votos_Candidatos_No_Registrados
         : 0
     );
     total += parseInt(
-      resultados.value.encabezado.total_Votos_Nulos != ""
-        ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+      resultadosVa.value.encabezado.total_Votos_Nulos != ""
+        ? resultadosVa.value.encabezado.total_Votos_Candidatos_No_Registrados
         : 0
     );
 
-    resultados.value.encabezado.total_Sistema = parseInt(total);
-    resultados.value.encabezado.total_Votos = parseInt(
-      resultados.value.encabezado.total_Votos
+    resultadosVa.value.encabezado.total_Sistema = parseInt(total);
+    resultadosVa.value.encabezado.total_Votos = parseInt(
+      resultadosVa.value.encabezado.total_Votos
     );
     $q.loading.show({
       spinner: QSpinnerCube,
@@ -368,11 +378,7 @@ const onSubmit = async () => {
       message: "Espere un momento por favor...",
       messageColor: "black",
     });
-    if (props.rp == true) {
-      resp = await capturaStore.registrarResultadosRp(resultados.value);
-    } else {
-      resp = await capturaStore.registrarResultados(resultados.value);
-    }
+    resp = await reservasStore.registrarResultadosVA(resultadosVa.value);
 
     if (resp.success) {
       $q.loading.hide();
@@ -382,7 +388,7 @@ const onSubmit = async () => {
         showConfirmButton: false,
         timer: 1500,
       });
-      reservasStore.actualizarTabla(true);
+      reservasStore.actualizarTablaReservasVA(true);
       actualizarModal(false);
     } else {
       $q.loading.hide();
