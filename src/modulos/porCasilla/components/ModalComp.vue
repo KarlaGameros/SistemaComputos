@@ -205,6 +205,53 @@
             </q-card>
           </div>
         </q-card-section>
+        <q-card-section class="row" v-if="perfil == 'Super Administrador'">
+          <div class="col-2 q-pa-sm">
+            <q-card
+              style="border-radius: 8px"
+              class="my-card text-center no-box-shadow bg-grey text-white"
+            >
+              <q-card-section>
+                <div class="text-h6 text-bold">Total votos</div>
+              </q-card-section>
+              <q-card-section>
+                <q-input
+                  class="text-h6"
+                  v-model="total_Votos"
+                  dense
+                  input-class="text-right"
+                />
+              </q-card-section>
+            </q-card>
+          </div>
+          <div class="col-2 q-pa-sm">
+            <q-card
+              style="border-radius: 8px"
+              class="my-card text-center no-box-shadow bg-grey text-white"
+            >
+              <q-card-section>
+                <div class="text-h6 text-bold">Total sistema</div>
+              </q-card-section>
+              <q-card-section>
+                <q-input
+                  class="text-h6"
+                  v-model="total_Sistema"
+                  dense
+                  input-class="text-right"
+                />
+              </q-card-section>
+            </q-card>
+          </div>
+          <div>
+            <br /><br />
+            <q-btn
+              icon="published_with_changes"
+              color="orange"
+              @click="modificarTotal"
+              label="Modificar totales"
+            ></q-btn>
+          </div>
+        </q-card-section>
         <q-card-section>
           <div class="col-12 justify-end">
             <div class="text-right q-gutter-xs">
@@ -242,16 +289,19 @@ import { defineProps, onBeforeMount, ref, watch } from "vue";
 import { useCasillaStore } from "src/stores/casilla-store";
 import { useAuthStore } from "src/stores/auth-store";
 import { useSolicitudesStore } from "src/stores/solicitudes-store";
+import { EncryptStorage } from "storage-encryption";
 import Swal from "sweetalert2";
 
 //----------------------------------------------------------
 
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const $q = useQuasar();
 const casillaStore = useCasillaStore();
 const authStore = useAuthStore();
 const solicitudesStore = useSolicitudesStore();
 const { modulo } = storeToRefs(authStore);
-const { resultados, modal, resultado_casilla } = storeToRefs(casillaStore);
+const { resultados, modal, resultado_casilla, totales } =
+  storeToRefs(casillaStore);
 const { list_Solicitudes_Mr, list_Solicitudes_Rp } =
   storeToRefs(solicitudesStore);
 const props = defineProps({
@@ -262,6 +312,9 @@ const props = defineProps({
 const siglas = "SC-REG-CAS";
 const motivo = ref(null);
 const solicitudPendiente = ref(false);
+const perfil = encryptStorage.decrypt("perfil");
+const total_Votos = ref(null);
+const total_Sistema = ref(null);
 
 //--------------------------------------------------------------------
 
@@ -301,7 +354,32 @@ const leerPermisos = async () => {
   $q.loading.hide();
 };
 
+const modificarTotal = async () => {
+  totales.value.id = resultados.value.encabezado.id;
+  totales.value.total_Votos = total_Votos.value;
+  totales.value.total_Sistema = total_Sistema.value;
+  let resp = await casillaStore.modificaTotal(totales.value);
+  if (resp.success) {
+    $q.notify({
+      position: "top-right",
+      type: "positive",
+      message: resp.data,
+    });
+    actualizarModal(false);
+    cargarData();
+  } else {
+    $q.notify({
+      position: "top-right",
+      type: "negative",
+      message: resp.data,
+    });
+  }
+};
+
 const actualizarModal = (valor) => {
+  totales.value.id = null;
+  totales.value.total_Votos = null;
+  totales.value.total_Sistema = null;
   motivo.value = null;
   casillaStore.initResultados();
   casillaStore.actualizarModal(valor);

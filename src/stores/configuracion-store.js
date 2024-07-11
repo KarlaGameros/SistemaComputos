@@ -13,6 +13,7 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
     list_Distritos: [],
     list_Distritos_By_Municipio: [],
     list_Candidatos_By_Partido: [],
+    list_Tipo_Elecciones_Mayoria: [],
   }),
   actions: {
     //----------------------------------------------------------------------
@@ -42,6 +43,32 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
       }
     },
 
+    //----------------------------------------------------------------------
+    //TIPO DE ELECCIONES
+    async loadTipoEleccionesMayoria() {
+      try {
+        let resp = await api.get("/Tipos_Elecciones");
+        let { data } = resp.data;
+        let listActivo = [];
+        listActivo = data.filter((x) => x.activo == true);
+        this.list_Tipo_Elecciones_Mayoria = listActivo.map((tipo) => {
+          return {
+            id: tipo.id,
+            nombre: tipo.nombre,
+            siglas: tipo.siglas,
+            activo: tipo.activo,
+            value: tipo.id,
+            label: tipo.nombre,
+          };
+        });
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
     //-----------------------------------------------------------
     async loadCandidatosByPartido(partido, eleccion, municipio_id) {
       try {
@@ -57,19 +84,14 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
             (x) => x.tipo_Candidato == "RP" && x.municipio_Id == municipio_id
           );
         }
-        let contador = 1;
-        let idsVistos = {};
+        let contador = 0;
+        let idsVistos = 0;
         this.list_Candidatos_By_Partido = filtro.map((candidato) => {
-          if (idsVistos[candidato.id]) {
-            contador++;
-          } else {
-            contador = 1;
-            idsVistos[candidato.id] = true;
+          if (candidato.id != idsVistos) {
+            contador += 1;
+            idsVistos = candidato.id;
           }
           let label = ` ${contador}-${candidato.nombres} ${candidato.apellido_Paterno}`;
-          if (candidato.apellido_Materno != null) {
-            label += ` ${candidato.apellido_Materno}`;
-          }
           return {
             value: candidato.id,
             label: label,
@@ -205,13 +227,13 @@ export const useConfiguracionStore = defineStore("useConfiguracionStore", {
         });
         if (encryptStorage.decrypt("oficina_Letra") != "CME central IEEN") {
           this.list_Distritos = listDistritos.filter((x) =>
-            x.nombre.includes(encryptStorage.decrypt("municipio"))
+            x.integracion.includes(encryptStorage.decrypt("municipio"))
           );
-          if (this.list_Distritos.length == 0) {
-            this.list_Distritos = listDistritos.filter((x) =>
-              x.integracion.includes(encryptStorage.decrypt("municipio"))
-            );
-          }
+          // if (this.list_Distritos.length == 0) {
+          //   this.list_Distritos = listDistritos.filter((x) =>
+          //     x.integracion.includes(encryptStorage.decrypt("municipio"))
+          //   );
+          // }
         } else {
           this.list_Distritos = listDistritos;
         }

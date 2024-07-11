@@ -254,29 +254,31 @@ const leerPermisos = async () => {
 
 watchEffect(() => {
   let total = 0;
-  for (let partido of resultados.value.partidos) {
-    if (partido.votos == "" || partido.votos == NaN) {
-      partido.votos = 0;
-    }
-    total += parseInt(partido.votos);
-  }
-  for (let coalicion of resultados.value.coaliciones) {
-    if (coalicion.votos == "" || coalicion.votos == NaN) {
-      coalicion.votos = 0;
-    }
-    total += parseInt(coalicion.votos);
-  }
-  if (
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados !== ""
-  ) {
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-    );
-  }
-  if (resultados.value.encabezado.total_Votos_Nulos !== "") {
-    total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-  }
-  totalVotos.value = total;
+  let totalPartido = resultados.value.partidos.reduce(
+    (accumulator, partido) =>
+      accumulator +
+      parseInt(partido.votos == "" || partido.votos == NaN ? 0 : partido.votos),
+    total
+  );
+  let totalCoalicion = resultados.value.coaliciones.reduce(
+    (accumulator, coalicion) =>
+      accumulator +
+      parseInt(
+        coalicion.votos == "" || coalicion.votos == NaN ? 0 : coalicion.votos
+      ),
+    total
+  );
+  total += parseInt(
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados == ""
+      ? 0
+      : resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+  );
+  total += parseInt(
+    resultados.value.encabezado.total_Votos_Nulos == ""
+      ? 0
+      : resultados.value.encabezado.total_Votos_Nulos
+  );
+  totalVotos.value = totalPartido + totalCoalicion + total;
 });
 
 const actualizarModal = (valor) => {
@@ -331,34 +333,16 @@ const onSubmit = async () => {
       label: " No, Cancelar!",
     },
   }).onOk(async () => {
-    let total = 0;
-    for (let partido of resultados.value.partidos) {
-      if (partido.votos == "" || partido.votos == NaN) {
-        partido.votos = 0;
-      }
-      total += parseInt(partido.votos);
-    }
-    for (let coalicion of resultados.value.coaliciones) {
-      if (coalicion.votos == "" || coalicion.votos == NaN) {
-        coalicion.votos = 0;
-      }
-      total += parseInt(coalicion.votos);
-    }
-
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
-        ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-        : 0
-    );
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Nulos != ""
-        ? resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-        : 0
-    );
-
-    resultados.value.encabezado.total_Sistema = parseInt(total);
+    resultados.value.encabezado.total_Sistema = parseInt(totalVotos.value);
     resultados.value.encabezado.total_Votos = parseInt(
       resultados.value.encabezado.total_Votos
+    );
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados =
+      parseInt(
+        resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+      );
+    resultados.value.encabezado.total_Votos_Nulos = parseInt(
+      resultados.value.encabezado.total_Votos_Nulos
     );
     $q.loading.show({
       spinner: QSpinnerCube,

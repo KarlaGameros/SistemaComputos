@@ -6,7 +6,7 @@
       style="border-radius: 20px"
     >
       <q-btn
-        v-for="tipo in list_Tipo_Elecciones"
+        v-for="tipo in list_Tipo_Elecciones_Mayoria"
         :key="tipo"
         @click="set_tipo_eleccion(tipo)"
         :flat="tipo.siglas != eleccion"
@@ -228,7 +228,7 @@ const configuracionStore = useConfiguracionStore();
 const mayoriaStore = useMayoriaStore();
 const { datos_grafica } = storeToRefs(mayoriaStore);
 const {
-  list_Tipo_Elecciones,
+  list_Tipo_Elecciones_Mayoria,
   list_Municipios,
   list_Distritos,
   list_Demarcaciones,
@@ -310,9 +310,10 @@ watch(tab, async (val) => {
   }
 });
 
-watch(list_Tipo_Elecciones, (val) => {
+watch(list_Tipo_Elecciones_Mayoria, (val) => {
   if (val.length > 0) {
     tipo_eleccion_id.value = val[0].id;
+    eleccion.value = val[0].siglas;
   }
 });
 
@@ -414,7 +415,7 @@ const limpiarFiltro = () => {
 const cargarData = async () => {
   await configuracionStore.loadMunicipios();
   await configuracionStore.loadDistritos();
-  await configuracionStore.loadTipoElecciones();
+  await configuracionStore.loadTipoEleccionesMayoria();
   await configuracionStore.loadPartidosPoliticos();
   await configuracionStore.loadCoaliciones();
   limpiarFiltro();

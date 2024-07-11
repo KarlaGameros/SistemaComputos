@@ -60,7 +60,17 @@
             />
           </div>
           <q-select
-            v-if="tipo_Eleccion.siglas == 'DIP'"
+            v-if="
+              tipo_Eleccion.siglas == 'DIP' && oficina != 'CME central IEEN'
+            "
+            v-model="distrito_Id"
+            :options="list_Distritos"
+            label="Distrito"
+            lazy-rules
+            :rules="[(val) => !!val || 'Seleccione distrito']"
+          />
+
+          <q-select
             v-model="distrito_Id"
             :options="list_Distritos"
             label="Distrito"
@@ -68,9 +78,6 @@
             :rules="[(val) => !!val || 'Seleccione distrito']"
           />
           <q-select
-            v-if="
-              tipo_Eleccion.siglas == 'PYS' || tipo_Eleccion.siglas == 'REG'
-            "
             :readonly="perfil == 'Capturista CME'"
             v-model="municipio_Id"
             :options="list_Municipios"
@@ -140,6 +147,7 @@ const {
   list_Distritos,
 } = storeToRefs(configuracionStore);
 const perfil = ref(encryptStorage.decrypt("perfil"));
+const oficina = ref(encryptStorage.decrypt("oficina_Letra"));
 
 //-----------------------------------------------------------
 
@@ -226,9 +234,7 @@ const consultar = async () => {
     await consultaStore.cosultaResultadosMr(
       tipo_Eleccion.value.siglas,
       tipo_Eleccion.value.id,
-      encryptStorage.decrypt("oficina_Letra") == "CME central IEEN"
-        ? municipio_Id.value
-        : encryptStorage.decrypt("municipio_Id"),
+      municipio_Id.value,
       distrito_Id.value,
       demarcacion_Id.value
     );

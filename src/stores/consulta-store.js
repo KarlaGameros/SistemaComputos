@@ -280,8 +280,11 @@ export const useConsultaStore = defineStore("useConsultaStore", {
         let resp = null;
         if (eleccion == "DIP") {
           if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            // resp = await api.get(
+            //   `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Distrito=${distrito_id.value}`
+            // );
             resp = await api.get(
-              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Distrito=${distrito_id.value}`
+              `/ResultadoComputos/ConsultaResultados?TipoEleccion=${eleccion_id}&Municipio=${municipio_id.value}&Distrito=${distrito_id.value}`
             );
           } else {
             resp = await api.get(
@@ -311,6 +314,7 @@ export const useConsultaStore = defineStore("useConsultaStore", {
         }
         if (resp.status == 200) {
           const { success, data } = resp.data;
+
           if (success) {
             this.resultados.rp = false;
             this.resultados.partidos = data.partidos;
@@ -347,6 +351,13 @@ export const useConsultaStore = defineStore("useConsultaStore", {
     async cosultaResultadosRP(eleccion_id, municipio_id, distrito_id) {
       try {
         let resp = null;
+        if (eleccion_id == 2) {
+          if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
+            resp = await api.get(
+              `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}`
+            );
+          }
+        }
         if (distrito_id != null) {
           if (encryptStorage.decrypt("oficina_Letra") == "CME central IEEN") {
             resp = await api.get(
@@ -357,14 +368,13 @@ export const useConsultaStore = defineStore("useConsultaStore", {
               `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}&Municipio=${municipio_id}&Distrito=${distrito_id.value}`
             );
           }
-        } else {
+        } else if (distrito_id == null && eleccion_id != 2) {
           resp = await api.get(
             `/ResultadoComputos/ConsultaResultadosRp?TipoEleccion=${eleccion_id}&Municipio=${municipio_id.value}`
           );
         }
         if (resp.status == 200) {
           const { success, data } = resp.data;
-
           if (success) {
             this.resultados.rp = true;
             this.resultados.partidos = data.partidos;

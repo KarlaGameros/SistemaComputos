@@ -10,11 +10,11 @@ import axios from "axios";
 // for each client)
 const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const api = axios.create({
-  baseURL: "https://paquetes.sistemas-ieenayarit.org/api",
-  //baseURL: "https://654tbrnh-5472.usw3.devtunnels.ms/api",
+  //baseURL: "https://paquetes.sistemas-ieenayarit.org/api",
+  //baseURL: "https://wx8grr22-5472.use.devtunnels.ms/api",
   //baseURL: "https://sim-api.sistemas-ieenayarit.org/api",
-  //baseURL: "http://sistema.ieenayarit.org:9370/api",
-  //baseURL: "https://api.sistemas-ieenayarit.org/api",
+  baseURL: "http://sistema.ieenayarit.org:9483/api",
+  // baseURL: "https://api.sistemas-ieenayarit.org/api",
 });
 
 api.interceptors.request.use((config) => {
@@ -30,7 +30,7 @@ api.interceptors.response.use(
     if (error.response.status == 401) {
       alert("Su sesión ha expirado, sera redireccionado al logín");
       sessionStorage.clear();
-      window.location = "https://acceso.sistemas-ieenayarit.org";
+      window.location = "http://sistema.ieenayarit.org:9471";
     }
     return Promise.reject();
   }

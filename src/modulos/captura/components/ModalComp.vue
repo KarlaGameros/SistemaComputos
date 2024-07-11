@@ -267,65 +267,45 @@ watchEffect(() => {
   } else {
     visible.value = false;
   }
-
   let total = 0;
-  for (let partido of resultados.value.partidos) {
-    if (partido.votos == "" || partido.votos == NaN) {
-      partido.votos = 0;
-    }
-    total += parseInt(partido.votos);
-  }
-  for (let coalicion of resultados.value.coaliciones) {
-    if (coalicion.votos == "" || coalicion.votos == NaN) {
-      coalicion.votos = 0;
-    }
-    total += parseInt(coalicion.votos);
-  }
-  // if (resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != "") {
-  //   total += parseInt(
-  //     resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-  //   );
-  // }
-  if (
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados == "" ||
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados == NaN
-  ) {
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados = 0;
-  }
-  total += parseInt(
-    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+  let totalPartido = resultados.value.partidos.reduce(
+    (accumulator, partido) =>
+      accumulator +
+      parseInt(partido.votos == "" || partido.votos == NaN ? 0 : partido.votos),
+    total
   );
-  // if (resultados.value.encabezado.total_Votos_Nulos != "") {
-  //   total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-  // }
-  if (
-    resultados.value.encabezado.total_Votos_Nulos == "" ||
-    resultados.value.encabezado.total_Votos_Nulos == NaN
-  ) {
-    resultados.value.encabezado.total_Votos_Nulos = 0;
-  }
-  total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-  totalVotos.value = total;
+  let totalCoalicion = resultados.value.coaliciones.reduce(
+    (accumulator, coalicion) =>
+      accumulator +
+      parseInt(
+        coalicion.votos == "" || coalicion.votos == NaN ? 0 : coalicion.votos
+      ),
+    total
+  );
+  total += parseInt(
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados == ""
+      ? 0
+      : resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+  );
+  total += parseInt(
+    resultados.value.encabezado.total_Votos_Nulos == ""
+      ? 0
+      : resultados.value.encabezado.total_Votos_Nulos
+  );
+  totalVotos.value = totalPartido + totalCoalicion + total;
 });
 
 const actualizarModal = (valor) => {
   if (resultados.value.encabezado.total_Sistema == 0) {
-    $q.dialog({
-      title: "Atención",
-      message: "Deberá guardar la información",
-      icon: "Warning",
-      html: true,
-      persistent: true,
-      transitionShow: "scale",
-      transitionHide: "scale",
-      cancel: "Regresar",
-      ok: false,
+    $q.notify({
+      position: "top-right",
+      type: "warning",
+      message: "Atención, el total de votos sistema es 0",
     });
-  } else {
-    capturaStore.initResultados();
-    capturaStore.intiEncabezado();
-    capturaStore.actualizarModal(valor);
   }
+  capturaStore.initResultados();
+  capturaStore.intiEncabezado();
+  capturaStore.actualizarModal(valor);
 };
 
 const reload = async () => {
@@ -425,40 +405,17 @@ const onSubmit = async () => {
       messageColor: "black",
     });
 
-    for (let partido of resultados.value.partidos) {
-      if (partido.votos == "" || partido.votos == NaN) {
-        partido.votos = 0;
-      }
-      total += parseInt(partido.votos);
-    }
-    for (let coalicion of resultados.value.coaliciones) {
-      if (coalicion.votos == "" || coalicion.votos == NaN) {
-        coalicion.votos = 0;
-      }
-      total += parseInt(coalicion.votos);
-    }
-    // if (
-    //   resultados.value.encabezado.total_Votos_Candidatos_No_Registrados != ""
-    // ) {
-    //   total += parseInt(
-    //     resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-    //   );
-    // }
-    total += parseInt(
-      resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
-    );
-    // if (resultados.value.encabezado.total_Votos_Nulos != "") {
-    //   total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-    // }
-    total += parseInt(resultados.value.encabezado.total_Votos_Nulos);
-    resultados.value.encabezado.total_Sistema = parseInt(
-      total == 0 ? totalVotos.value : total
-    );
+    resultados.value.encabezado.total_Sistema = parseInt(totalVotos.value);
     resultados.value.encabezado.total_Votos = parseInt(
       resultados.value.encabezado.total_Votos
     );
-    parseInt(resultados.value.encabezado.total_Votos_Candidatos_No_Registrados);
-    parseInt(resultados.value.encabezado.total_Votos_Nulos);
+    resultados.value.encabezado.total_Votos_Candidatos_No_Registrados =
+      parseInt(
+        resultados.value.encabezado.total_Votos_Candidatos_No_Registrados
+      );
+    resultados.value.encabezado.total_Votos_Nulos = parseInt(
+      resultados.value.encabezado.total_Votos_Nulos
+    );
     if (props.rp == true) {
       resp = await capturaStore.registrarResultadosRp(resultados.value);
     } else {

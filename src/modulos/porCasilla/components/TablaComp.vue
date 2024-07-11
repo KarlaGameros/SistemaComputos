@@ -53,8 +53,29 @@
                 row-key="name"
                 v-model:pagination="pagination"
                 color="pink"
-                :rows-per-page-options="[5, 10, 15, 20, 25, 30, 50]"
               >
+                <template v-slot:top-left>
+                  <q-select
+                    filled
+                    color="pink"
+                    class="q-pl-md"
+                    v-model="municipio_Id"
+                    :options="list_Municipios"
+                    label="Selecciona municipio"
+                    hint="Filtrar por municipio"
+                    style="width: 260px"
+                  />
+                  <q-select
+                    filled
+                    color="pink"
+                    class="q-pl-md"
+                    v-model="estatus_Id"
+                    :options="list_Estatus"
+                    label="Selecciona estatus"
+                    hint="Filtrar por estatus"
+                    style="width: 260px"
+                  />
+                </template>
                 <template v-slot:header-cell="props">
                   <q-th :props="props">
                     <q-input
@@ -127,8 +148,23 @@
                         >
                           <q-tooltip>Ver resultados</q-tooltip>
                         </q-btn>
+                        <q-btn
+                          v-if="perfil == 'Super Administrador'"
+                          flat
+                          round
+                          :color="
+                            props.row.total_Sistema !=
+                              props.row.total_Capturado ||
+                            props.row.total_Capturado > props.row.boletas
+                              ? 'white'
+                              : 'pink'
+                          "
+                          icon="delete"
+                          @click="eliminarResultado(col.value, 'MR')"
+                        >
+                          <q-tooltip>Eliminar resultados</q-tooltip>
+                        </q-btn>
                       </div>
-
                       <label v-else>{{ col.value }}</label>
                     </q-td>
                   </q-tr>
@@ -145,8 +181,29 @@
                 :visible-columns="visible_columns"
                 v-model:pagination="pagination"
                 color="pink"
-                :rows-per-page-options="[5, 10, 15, 20, 25, 30, 50]"
               >
+                <template v-slot:top-left>
+                  <q-select
+                    filled
+                    color="pink"
+                    class="q-pl-md"
+                    v-model="municipio_Id"
+                    :options="list_Municipios"
+                    label="Selecciona municipio"
+                    hint="Filtrar por municipio"
+                    style="width: 260px"
+                  />
+                  <q-select
+                    filled
+                    color="pink"
+                    class="q-pl-md"
+                    v-model="estatus_Id"
+                    :options="list_Estatus"
+                    label="Selecciona estatus"
+                    hint="Filtrar por estatus"
+                    style="width: 260px"
+                  />
+                </template>
                 <template v-slot:header-cell="props">
                   <q-th :props="props">
                     <q-input
@@ -219,6 +276,22 @@
                         >
                           <q-tooltip>Ver resultados</q-tooltip>
                         </q-btn>
+                        <q-btn
+                          v-if="perfil == 'Super Administrador'"
+                          flat
+                          round
+                          :color="
+                            props.row.total_Sistema !=
+                              props.row.total_Capturado ||
+                            props.row.total_Capturado > props.row.boletas
+                              ? 'white'
+                              : 'pink'
+                          "
+                          icon="delete"
+                          @click="eliminarResultado(col.value, 'RP')"
+                        >
+                          <q-tooltip>Eliminar resultados</q-tooltip>
+                        </q-btn>
                       </div>
                       <label v-else>{{ col.value }}</label>
                     </q-td>
@@ -239,28 +312,31 @@
 </template>
 
 <script setup>
-import { onBeforeMount, ref, watch } from "vue";
+import { onBeforeMount, ref, watch, watchEffect } from "vue";
 import { useConfiguracionStore } from "src/stores/configuracion-store";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "src/stores/auth-store";
 import { useCasillaStore } from "src/stores/casilla-store";
 import { useQuasar, QSpinnerCube } from "quasar";
+import { EncryptStorage } from "storage-encryption";
 import ModalComp from "../components/ModalComp.vue";
 
-//-----------------------------------------------------------
+//----------------------------------------------------------
 
+const encryptStorage = new EncryptStorage("SECRET_KEY", "sessionStorage");
 const $q = useQuasar();
 const casillaStore = useCasillaStore();
 const configuracionStore = useConfiguracionStore();
 const authStore = useAuthStore();
-const { modulo } = storeToRefs(authStore);
+const { modulo, usuario_Nombre } = storeToRefs(authStore);
 const {
   list_por_casilla,
   list_por_casilla_filtro,
   list_por_casilla_rp,
   list_por_casilla_rp_filtro,
 } = storeToRefs(casillaStore);
-const { list_Tipo_Elecciones } = storeToRefs(configuracionStore);
+const { list_Tipo_Elecciones, list_Municipios } =
+  storeToRefs(configuracionStore);
 const eleccion = ref("DIP");
 const eleccion_Id = ref(null);
 const tab = ref("MR");
@@ -277,6 +353,10 @@ const visible_columns = ref([
   "id",
 ]);
 const columnFilters = ref({});
+const perfil = encryptStorage.decrypt("perfil");
+const estatus_Id = ref("Todos");
+const list_Estatus = ref(["Todos", "Con observaciones"]);
+const municipio_Id = ref({ value: 0, label: "Todos" });
 
 //-----------------------------------------------------------
 
@@ -591,6 +671,52 @@ const leerPermisos = async () => {
   $q.loading.hide();
 };
 
+const eliminarResultado = (id, tipo) => {
+  $q.dialog({
+    title: "Eliminar resultado",
+    message: `<div style="text-align: center;">
+      <b>${usuario_Nombre.value}</b>,<br> ¿Esta seguro de eliminar permanentemente el
+     resultado? <br><b>SERÁ TU RESPONSABILIDAD</b><br><img  src='https://pbs.twimg.com/media/FFamw3uXIAEE5SX.jpg'/></div>`,
+    icon: "Warning",
+    html: true,
+    persistent: true,
+    transitionShow: "scale",
+    transitionHide: "scale",
+    ok: {
+      color: "positive",
+      label: "¡Sí!, eliminar",
+    },
+    cancel: {
+      color: "negative",
+      label: " No Cancelar",
+    },
+  }).onOk(async () => {
+    $q.loading.show();
+    let resp = null;
+    if (tipo == "MR") {
+      resp = await casillaStore.deleteResultado(id);
+    } else {
+      resp = await casillaStore.deleteResultadoRP(id);
+    }
+    if (resp.success) {
+      $q.loading.hide();
+      $q.notify({
+        position: "top-right",
+        type: "positive",
+        message: resp.data,
+      });
+      cargarData();
+    } else {
+      $q.loading.hide();
+      $q.notify({
+        position: "top-right",
+        type: "negative",
+        message: resp.data,
+      });
+    }
+  });
+};
+
 const set_tipo_eleccion = (tipo) => {
   columnFilters.value = {};
   loading.value = true;
@@ -627,6 +753,7 @@ const cargarData = async () => {
   eleccion_Id.value = list_Tipo_Elecciones.value[0].id;
   await configuracionStore.loadPartidosPoliticos();
   await configuracionStore.loadCoaliciones();
+  await configuracionStore.loadMunicipios();
   await casillaStore.load_por_casilla(eleccion_Id.value);
   await casillaStore.load_por_casilla_rp(eleccion_Id.value);
   loading.value = false;
@@ -741,6 +868,60 @@ const columns = [
     sortable: false,
   },
 ];
+
+const filtrar = (list1, list2, filtro) => {
+  list_por_casilla_filtro.value = list1.filter((item) => {
+    let cumple = true;
+    if (filtro.estatus !== undefined) {
+      if (filtro.estatus == "Todos") {
+        cumple = cumple && item.id === item.id;
+      } else {
+        cumple =
+          cumple &&
+          (item.total_Sistema != item.total_Capturado ||
+            item.total_Capturado > item.boletas ||
+            (item.total_Sistema == 0 && item.total_Capturado == 0));
+      }
+    }
+    if (filtro.municipio !== undefined) {
+      if (filtro.municipio == "Todos") {
+        cumple = cumple && item.municipio === item.municipio;
+      } else {
+        cumple = cumple && item.municipio === filtro.municipio;
+      }
+    }
+    return cumple;
+  });
+  list_por_casilla_rp_filtro.value = list2.filter((item) => {
+    let cumple = true;
+    if (filtro.estatus !== undefined) {
+      if (filtro.estatus == "Todos") {
+        cumple = cumple && item.id === item.id;
+      } else {
+        cumple =
+          cumple &&
+          (item.total_Sistema != item.total_Capturado ||
+            item.total_Capturado > item.boletas ||
+            (item.total_Sistema == 0 && item.total_Capturado == 0));
+      }
+    }
+    if (filtro.municipio !== undefined) {
+      if (filtro.municipio == "Todos") {
+        cumple = cumple && item.municipio === item.municipio;
+      } else {
+        cumple = cumple && item.municipio === filtro.municipio;
+      }
+    }
+    return cumple;
+  });
+};
+
+watchEffect(() => {
+  const filtro = {};
+  if (estatus_Id.value != null) filtro.estatus = estatus_Id.value;
+  if (municipio_Id.value != null) filtro.municipio = municipio_Id.value.label;
+  filtrar(list_por_casilla.value, list_por_casilla_rp.value, filtro);
+});
 
 const filter = ref("");
 const pagination = ref({

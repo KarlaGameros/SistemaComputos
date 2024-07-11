@@ -9,6 +9,11 @@ export const useCasillaStore = defineStore("useCasillaStore", {
     list_por_casilla_filtro: [],
     list_por_casilla_rp: [],
     list_por_casilla_rp_filtro: [],
+    totales: {
+      id: null,
+      total_Votos: null,
+      total_Sistema: null,
+    },
     resultado_casilla: {
       id: null,
       distrito: null,
@@ -291,6 +296,84 @@ export const useCasillaStore = defineStore("useCasillaStore", {
       }
     },
 
-    //----------------------------------------------------------------------
+    //-----------------------------------------------------------
+    async modificaTotal(total) {
+      try {
+        const resp = await api.post(
+          "/ResultadoComputos/ModificaTotales",
+          total
+        );
+        if (resp.status == 200) {
+          const { success, data } = resp.data;
+          if (success === true) {
+            return { success, data };
+          } else {
+            return { success, data };
+          }
+        } else {
+          return {
+            success: false,
+            data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+          };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    //-----------------------------------------------------------
+    //DELETE RESULTADO
+    async deleteResultado(id) {
+      try {
+        const resp = await api.delete(`/ResultadoComputos/${id}`);
+        if (resp.status == 200) {
+          let { success, data } = resp.data;
+          if (success === true) {
+            return { success, data };
+          } else {
+            return { success, data };
+          }
+        } else {
+          return {
+            success: false,
+            data: "Ocurrio un error, intentelo de nuevo",
+          };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
+
+    //-----------------------------------------------------------
+    //DELETE RESULTADO RP
+    async deleteResultadoRP(id) {
+      try {
+        const resp = await api.delete(`/ResultadoComputos/RP/${id}`);
+        if (resp.status == 200) {
+          let { success, data } = resp.data;
+          if (success === true) {
+            return { success, data };
+          } else {
+            return { success, data };
+          }
+        } else {
+          return {
+            success: false,
+            data: "Ocurrio un error, intentelo de nuevo",
+          };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          data: "Ocurrió un error, inténtelo de nuevo. Si el error persiste, contacte a soporte",
+        };
+      }
+    },
   },
 });

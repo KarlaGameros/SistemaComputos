@@ -390,7 +390,7 @@ const resumenCotejo = () => {
           0
         );
       }
-      capturaStore.actualizarModal(true);
+      reservasStore.actualizarModal(true);
       $q.loading.hide();
     }
   });
